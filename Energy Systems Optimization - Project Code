@@ -4,6 +4,9 @@
  * Creation Date: May 7, 2021 at 10:27:19 AM
  *********************************************/
 
+// THIS CODE WRITTEN IN OPL AND THE MODEL IS SOLVED VIA CPLEX SOLVER.
+
+
  //Setting Parameters
 
 int length_of_time_periods = ...;							// 24h-data
