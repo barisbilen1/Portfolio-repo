@@ -1,0 +1,357 @@
+---
+title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 3 </h2>  <h3> done by </h3> <h3> <span style="color:red">*ALİ BARIŞ BİLEN* </span> </h3>  <h4> <span
+  style="color:red">*21602902*
+pagetitle: IE 451 Quiz Fall 2019
+date: "<center> due 19:00 on Wednesday, 2 December 2020</center>"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  bookdown::html_document2:
+    theme: readable
+    toc: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(pander)
+library(magrittr)
+library(ISLR)
+library(tidyverse)
+library(leaps)
+```
+
+## Answer for a) and b) 
+
+As suggested in the question, I have generated 100 predictors, 100 error terms and 100 response variables. Beta coefficients are chosen as 5, 4, -2, 3 respectively.
+
+```{r}
+set.seed(1912)
+X <-rnorm(100)
+noise <- rnorm(100)
+Y <- 5 + 4*X - 2*X^2 + 3*X^3 + noise
+
+d <- data.frame(Y, X)
+```
+
+## Answer for c)
+
+To choose the best model containing the predictors X,... $X^{10}$, I use regsubsets().  
+
+```{r}
+regfit.with10predictors <- regsubsets(Y ~ poly(X, 10), data = d, nvmax = 10)
+reg.summary <- summary(regfit.with10predictors)
+```
+
+To find the number of variables that will be included in the model according to each of three criterions (adjusted $R^2$, BIC, $C_p$), I use the following code.
+
+```{r}
+which.max(reg.summary$adjr2)
+which.min(reg.summary$cp)
+which.min(reg.summary$bic)
+```
+
+We see that; if we take into account adjusted $R^2$ we must include 5 variables, if we take into account $C_p$ and BIC we must include 4 variables in our model. Here are the plots showing this result;
+
+```{r}
+par(mfrow=c(2,2))
+plot(reg.summary$cp ,xlab="Number of Variables",ylab="cp",type="l") 
+points(4,reg.summary$cp[4], col="green",cex=2,pch=20)
+
+plot(reg.summary$bic ,xlab="Number of Variables",ylab="bic",type="l")
+points(4,reg.summary$bic[4], col="yellow",cex=2,pch=20)
+
+plot(reg.summary$adjr2 ,xlab="Number of Variables",ylab="Adjusted R^2",type="l")
+points(5,reg.summary$adjr2[5], col="darkblue",cex=2,pch=20)
+
+
+```
+Below plots tell us that if the top cell of a column is black, we should include that variable (column) in our model. They confirm the results we have got previously.
+
+```{r}
+
+plot(regfit.with10predictors,scale="bic")
+plot(regfit.with10predictors,scale="adjr2")
+
+```
+
+
+**Conclusion of c)**
+
+```{r}
+coef(regfit.with10predictors, which.max(reg.summary$adjr2))
+```
+
+The best model according to adjusted $R^2$ is consisting of $X^1$, $X^2$, $X^3$, $X^5$, $X^6$ and intercept. Coefficients are 186.62, -110.54, 132.64, -1.28, -3.25 and 1.84(intercept) respectively.
+
+
+```{r}
+coef(regfit.with10predictors, which.min(reg.summary$bic))
+```
+The best model according to BIC is consisting of $X^1$, $X^2$, $X^3$, $X^6$ and intercept. Coefficients are 186.62, -110.54, 132.64, -3.25, 1.84(intercept) respectively.
+
+```{r}
+coef(regfit.with10predictors, which.min(reg.summary$cp))
+```
+
+The best model according to $C_p$ is consisting of $X^1$, $X^2$, $X^3$, $X^6$ and intercept. Coefficients are 186.62, -110.54, 132.64, -3.25, 1.84(intercept) respectively.(same as the BIC)
+
+
+## Answer to d)
+
+1. Forward Stepwise Selection
+
+```{r}
+regfit.forward10predictors <- regsubsets(Y ~ poly(X, 10), data = d, nvmax = 10,method="forward")
+forwardsummary <- summary(regfit.forward10predictors)
+```
+
+
+```{r}
+step(lm(Y ~ poly(X, 10)),direction = "forward")
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(forwardsummary$cp ,xlab="Number of Variables",ylab="cp",type="l") 
+points(which.min(forwardsummary$cp),forwardsummary$cp[which.min(forwardsummary$cp)], col="green",cex=2,pch=20)
+
+plot(forwardsummary$bic ,xlab="Number of Variables",ylab="bic",type="l") 
+points(which.min(forwardsummary$bic),forwardsummary$bic[which.min(forwardsummary$bic)], col="green",cex=2,pch=20)
+
+plot(forwardsummary$adjr2 ,xlab="Number of Variables",ylab="Adjusted R^2 ",type="l") 
+points(which.max(forwardsummary$adjr2),forwardsummary$adjr2[which.max(forwardsummary$adjr2)], col="green",cex=2,pch=20)
+```
+
+```{r}
+which.max(forwardsummary$adjr2)
+which.min(forwardsummary$cp)
+which.min(forwardsummary$bic)
+```
+
+
+We see that the optimal number of predictors that will be included in the regression model is the same for each criterion, for forward selection and best subset selection in part c). Let's also consider coefficients;
+
+*For cp*
+```{r}
+coef(regfit.forward10predictors, which.min(forwardsummary$cp))
+```
+
+They are the same as the coefficients we obtained in part c).
+
+*For BIC*
+```{r}
+coef(regfit.forward10predictors, which.min(forwardsummary$bic))
+```
+
+They are the same as the coefficients we obtained in part c).
+
+*For adjusted $R^2$*
+
+```{r}
+coef(regfit.forward10predictors, which.max(forwardsummary$adjr2))
+```
+
+
+They are the same as the coefficients we obtained in part c).
+
+
+2. Backward Stepwise Selection
+
+```{r}
+regfit.backward10predictors=regsubsets(Y ~ poly(X, 10), data = d, nvmax = 10,method="backward") 
+backwardsummary <- summary(regfit.backward10predictors)
+backwardsummary
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(backwardsummary$cp ,xlab="Number of Variables",ylab="cp",type="l") 
+points(which.min(backwardsummary$cp),backwardsummary$cp[which.min(backwardsummary$cp)], col="green",cex=2,pch=20)
+
+plot(backwardsummary$bic ,xlab="Number of Variables",ylab="bic",type="l") 
+points(which.min(backwardsummary$bic),backwardsummary$bic[which.min(backwardsummary$bic)], col="green",cex=2,pch=20)
+
+plot(backwardsummary$adjr2 ,xlab="Number of Variables",ylab="Adjusted R^2 ",type="l") 
+points(which.max(backwardsummary$adjr2),backwardsummary$adjr2[which.max(backwardsummary$adjr2)], col="green",cex=2,pch=20)
+```
+```{r}
+which.max(backwardsummary$adjr2)
+which.min(backwardsummary$cp)
+which.min(backwardsummary$bic)
+```
+
+Again, the optimal number of variables to be included in the regression model is the same from the point of each criterion. Let's also consider coefficients;
+
+*For cp*
+```{r}
+coef(regfit.backward10predictors, which.min(backwardsummary$cp))
+```
+
+They are the same as the coefficients we obtained in part c).
+
+*For BIC*
+```{r}
+coef(regfit.backward10predictors, which.min(backwardsummary$bic))
+```
+
+They are the same as the coefficients we obtained in part c).
+
+*For adjusted $R^2$*
+
+```{r}
+coef(regfit.backward10predictors, which.max(backwardsummary$adjr2))
+```
+
+
+**Result**
+Everything is the same. My interpretation; the sample data is generated by a known equation, i.e. it is simulated data, I think this is why the results perfectly matched with each other. (also the data is quite small, there shouldn't be much variation in the results we obtained by using different methods)
+
+## Answer to e)
+
+```{r}
+
+library(glmnet)
+d2 <- na.omit(d)
+
+X <- model.matrix(Y ~ poly(X,10), d2)[ ,-1] # we remove the intercept
+y <- d2$Y
+
+
+reslasso_cv <- cv.glmnet(X, y, alpha = 1)
+
+plot(reslasso_cv)
+
+```
+
+```{r}
+reslasso <- glmnet(X, y, alpha = 1, lambda = c(reslasso_cv$lambda.min, reslasso_cv$lambda.1se))
+```
+
+Optimal value of $\lambda$ is 
+```{r}
+reslasso_cv$lambda.min
+```
+
+confirming minimum $\lambda$ value aligns with minimum on plot.
+
+```{r}
+log(reslasso_cv$lambda.min)
+```
+
+```{r}
+a <- tibble("y"=coef(reslasso)[,2])
+```
+
+**Coefficient estimates**
+
+If we use $\lambda_{min}$ as a penalty cost, our coefficients will be as follows;
+
+```{r}
+s0coefs <- tibble("variables"=c("X1","X2","X3","intercept"),"coefficients"=c(113.01,-36.94,59.04,1.8456))
+s0coefs
+```
+
+If we use $\lambda_{1se}$ as a penalty cost, i.e. we want a sparser model, our coefficients will be as follows;
+```{r}
+s1coefs <- tibble("variables"=c("X1","X2","X3","X4","X5","X6","X10","intercept"), "coefficients"=c(185.92,-109.84,131.94,0.19,-0.58,-2.54,0.0093,1.8456))
+s1coefs
+```
+
+**Comments** 
+
+Both $\lambda$  values output the same intercept coefficient.
+
+## Answer to f)
+
+Here I selected $\beta_0$ as 6 and $\beta_7$ as 3.
+
+```{r}
+set.seed(1912)
+X2 <-rnorm(100)
+noise2 <- rnorm(100)
+Y2 <- 6 + 3*X2^7 + noise2
+
+d3 <- data.frame(Y2,X2)
+```
+
+```{r}
+regfitforpartf <- regsubsets(Y2 ~ poly(X2, 10), data = d2, nvmax = 10)
+
+fit_summary <- summary(regfitforpartf)
+
+par(mfrow=c(2,2))
+
+plot(fit_summary$cp, type="l", col=4, main = "Y=B0 + B7X^7 + err | Best Subset", xlab = "# Variables", ylab = "Mallows Cp") 
+points(which.min(fit_summary$cp),fit_summary$cp[which.min(fit_summary$cp)], col=4, pch = 15, cex=2)
+
+plot(fit_summary$bic, type="l", col=6, main = "Y=B0 + B7X^7 + err | Best Subset", xlab = "# Variables", ylab = "Bayes Information Criterion")
+points(which.min(fit_summary$bic),fit_summary$bic[which.min(fit_summary$bic)], col=6, pch = 16, cex=2)
+
+plot(fit_summary$adjr2, type="l", col=3, main = "Y=B0 + B7X^7 + err | Best Subset", xlab = "# Variables", ylab = "Adjusted R Squared")
+points(which.max(fit_summary$adjr2),fit_summary$adjr2[which.max(fit_summary$adjr2)], col=3, pch = 17, cex=2)
+
+```
+
+
+```{r}
+which.max(fit_summary$adjr2)
+which.min(fit_summary$cp)
+which.min(fit_summary$bic)
+```
+
+We see that all three criteria suggest us to use 7-variable model.
+
+Resulting coefficients;
+
+```{r}
+coeftable <- data.frame(bic=coef(regfitforpartf, which.min(fit_summary$bic)) , cp=coef(regfitforpartf, which.min(fit_summary$cp)),ajr2=coef(regfitforpartf, which.max(fit_summary$adjr2)))
+row.names(coeftable) <- c("X1","X2","X3","X4","X5","X6","X7","X8")
+coeftable
+```
+
+All coefficients are the same.
+
+
+Now let's do lasso;
+```{r}
+d4 <- na.omit(d3)
+
+X3 <- model.matrix(Y2 ~ poly(X2,10), d4)[ ,-1] # we remove the intercept
+y3 <- d4$Y
+
+#lambda_grid <- exp(seq(-1, 10, len = 150))
+reslasso_cvx7 <- cv.glmnet(X3, y3, alpha = 1)
+#reslasso_cv <- cv.glmnet(X, y, alpha = 0, lambda = lambda_grid)
+plot(reslasso_cvx7)
+
+```
+
+```{r}
+reslassox7 <- glmnet(X3, y3, alpha = 1, lambda = c(reslasso_cvx7$lambda.min))
+```
+
+
+Optimal value of $\lambda$ is 
+```{r}
+reslasso_cvx7$lambda.min
+```
+
+```{r}
+log(reslasso_cvx7$lambda.min) #confirming lambda value on the plot.
+```
+We can assume $3.89 \approx 4$. However, when we look at the plot we see that MSE on unseen data with 4,5,6,7,8-variable models are almost the same. That means; lasso suggests 4,5,6,7,8-variable model. We can use whatever we want.
+Let's look at the resulting coefficients;
+
+```{r}
+coef(reslassox7,id=5)
+```
+
+Coef() function outlined 5 variables except the intercept, which is fine. Intercept coefficient is the same as the intercepts suggested by $C_p$, $BIC$ and $Adjusted\quad R^2$ as expected. However the other variables' coefficients are far more different than the coefficients found previously with best subset selection approach. Because here lasso tries to fit the same model with using 5 variables only, which is 2 less than the best subset selection(7 variables).
+
+
