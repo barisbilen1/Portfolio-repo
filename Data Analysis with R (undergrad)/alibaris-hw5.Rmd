@@ -1,0 +1,201 @@
+---
+title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 5 </h2>  <h3> done by </h3> <h3> <span style="color:red">*ALİ BARIŞ BİLEN* </span> </h3>  <h4> <span
+  style="color:red">*21602902*
+pagetitle: IE 451 HW5 - Ali Barış Bilen
+date: "<center> due 19:00 on Saturday, 19 December 2020</center>"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  bookdown::html_document2:
+    theme: readable
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ISLR)
+library(magrittr)
+library(pander)
+library(MASS)
+```
+
+## Answer to a)
+
+```{r}
+d <- Weekly
+```
+
+Here is the summary of data;
+
+```{r}
+summary(d)
+```
+
+There are 484 *Downs* and 605 *Ups*. Average weekly return appears to be 0.1499 on average, as the mean of *Today* implies. I guess no more inferences can be made looking at this summary. Now, I will check whether *Volume* increased or not throughout 20 years.
+
+```{r}
+attach(d)
+plot(d$Year,d$Volume)
+```
+
+The plot tells us that *Volume* (number of shares traded in billions) increased over the 20-year horizon.
+
+Now I will look at the correlation between predictor variables.
+
+```{r}
+cor(d[,-9]) #I am excluding "Direction" because cor() needs numerical values.
+```
+
+
+It appears that only *Volume* and *Year* are correlated with each other, with a correlation coefficient of 0.84.(this also verifies the plot we obtained previously)
+
+*Another graphical representation*
+
+```{r}
+library(corrplot)
+d %>% 
+  select_if(is.numeric) %>% 
+  cor() %>% 
+  corrplot(type = "lower", diag = FALSE, order = "hclust")
+```
+
+## Answer to b)
+
+```{r}
+logistic.reg=glm(d$Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume ,data=d ,family=binomial)
+summary(logistic.reg)
+```
+
+We see that only one predictor variable is statistically significant at 95%, which is *Lag2* (along with the *Intercept* of course). Other variables have p-values higher than 0.05, meaning that we are unable to reject to null hypothesis of \ $$ H_o:\text{Variable is not statistically significant, i.e., its coefficient is zero.} $$ \ and conclude that they are not statistically significant for the model. 
+
+## Answer to c)
+
+Confusion matrix is below.
+
+```{r}
+glm.probs=predict(logistic.reg,type="response")
+glm.pred=rep("Down",1089)
+glm.pred[glm.probs >.5]="Up"
+
+table(glm.pred,Direction)
+```
+
+
+The diagonal elements of the confusion matrix indicate correct predictions, while the off-diagonals represent incorrect predictions. Then, the overall fraction of correct predictions is $$\frac{54+557}{1089}=0.56$$ \
+
+We can also check this using mean() function.
+```{r}
+mean(glm.pred==Direction)
+```
+In the confusion matrix, upper-left element corresponds to the number of correct *Down* predictions(model predicted as *Down* and it came up as *Down* in reality too). Upper-right element corresponds to the number of *Down* predictions but rather came up as *Up* in reality, so they are wrong predictions. Bottom-left element corresponds to the number of *Up* predictions that came up as *Down*s in reality, so they are wrong predictions. Lastly, bottom-right element corresponds to the number of correct *Up* predictions(model predicted as *Up* and it came up as *Up* in reality too). So, we can conclude that when the *Direction* is *Up* the model predicts $$\frac{557}{557+48}=92\%$$ of the time; and when the *Direction* is *Down* the model predicts $$\frac{54}{54+430}=11\%.$$ The model performs poorly when predicting the *Down*s.
+
+## Answer to d)
+
+```{r}
+training_set = (Year<2009)
+test_set <- d[!training_set,]
+logistic.reg.train <- glm(Direction~ Lag2,data=d,family=binomial,subset=training_set) #we fit the model on training data
+
+glm.test.probs <- predict(logistic.reg.train,newdata=test_set,type="response")
+
+Direction.test <- d$Direction[!training_set]
+
+glm.test.preds=rep("Down",length(glm.test.probs))
+glm.test.preds[glm.test.probs >.5]="Up"
+
+
+table(glm.test.preds,Direction.test)
+```
+
+
+```{r}
+mean(glm.test.preds==Direction.test)
+```
+Confusion matrix and the overall fraction of correct predictions for the held out (test) data is above. This model (with only *Lag2*) is better than the complete model as the ratio of correct predictions have increased by 6.5% (from 56% to 62.5%). And, this model model predicts *Down*s better (with 20.9% accuracy, previously it was 11%) and *Up*s a little bit worse (with 91.8% accuracy, previously it was 92%).
+
+## Answer to i)
+
+### Combination 1
+
+I pick *Lag1* and *Lag2* as my predictors and fit the model using training data. (I picked *Lag1* because it has the smallest p-value among insignificant variables(0.11))
+
+```{r}
+comb1.logistic.reg=glm(Direction~Lag1+Lag2 ,data=d ,family=binomial,subset=training_set)
+```
+
+```{r}
+glm.test.probsforcomb1 <- predict(comb1.logistic.reg,newdata=test_set,type="response")
+
+Direction.test <- d$Direction[!training_set]
+
+glm.test.predsforcomb1=rep("Down",length(glm.test.probsforcomb1))
+glm.test.predsforcomb1[glm.test.probsforcomb1 >.5]="Up"
+
+
+table(glm.test.predsforcomb1,Direction.test)
+```
+
+
+```{r}
+mean(glm.test.predsforcomb1==Direction.test)
+```
+Overall fraction of correct predictions is 57.7%. It is better than the full model and worse than the model containing *Lag2* as the only predictor.
+
+### Combination 2
+
+Now I will include the interaction between *Lag1* and *Lag2* to the model.
+
+```{r}
+comb2logistic.reg <- glm(Direction ~ Lag2:Lag1, data = d, family = binomial, subset = training_set)
+glm.test.probsforcomb2 <- predict(comb2logistic.reg, newdata=test_set, type = "response")
+
+glm.test.predsforcomb2 <- rep("Down", length(glm.test.probsforcomb2))
+glm.test.predsforcomb2[glm.test.probsforcomb2> 0.5] = "Up"
+table(glm.test.predsforcomb2, Direction.test)
+```
+```{r}
+mean(glm.test.predsforcomb2==Direction.test)
+```
+Now  the overall fraction of correction predictions is increased to 58.6%. It is still worse than the model containing only *Lag2* as the predictor.
+
+### Combination 3
+
+Now I pick *Lag2* and *Lag4* as the predictors (*Lag4* has the smallest p-value after *Lag2* and *Lag1*)
+
+```{r}
+comb3.logistic.reg=glm(Direction~Lag4+Lag2 ,data=d ,family=binomial,subset=training_set)
+```
+
+```{r}
+glm.test.probsforcomb3 <- predict(comb3.logistic.reg,newdata=test_set,type="response")
+
+glm.test.predsforcomb3=rep("Down",length(glm.test.probsforcomb3))
+glm.test.predsforcomb3[glm.test.probsforcomb3 >.5]="Up"
+
+table(glm.test.predsforcomb3,Direction.test)
+```
+
+```{r}
+mean(glm.test.predsforcomb3==Direction.test)
+```
+Overall fraction of correct predictions have increased to 62.5%. It is the same as the model containing *Lag2* as the only predictor. That means *Lag4* does not have any predictive (or explanatory) power.
+
+**Conclusion** 
+
+The logistic regression model containing *Lag2* as the only predictor gives us the best overall fraction of correct predictions on the held out (test) data.
+
+
+
+
+
+
+
+
+
+
+
