@@ -1,0 +1,280 @@
+---
+  title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 2 </h2>  <h3> done by </h3> <h3> <span style="color:red">*ALİ BARIŞ BİLEN* </span> </h3>  <h4> <span style="color:red">*21602902* </span> </h4></center>
+  pagetitle: IE 451 Quiz Fall 2019 
+  date: <center> due 19:00 on Tuesday, 03 November 2020</center>
+  output: 
+    bookdown::html_document2:
+      theme: readable
+      toc: true
+---
+  
+```{r setup, include=FALSE}
+library(magrittr)
+library(tidyverse)
+library(knitr)
+opts_chunk$set(echo = TRUE)
+```
+
+* Read
+  * Section 1 of Chapter 3,
+  * Sections 1 and 3.1-3.3 of Chapter 5 
+from ISLR.
+
+* Solve Exercise 8 (a)-(e) at the end of Chapter 5. Write your responses below each part in the [Rmd file](hw2.Rmd). 
+
+  - Compress  **Rmd**, **html**, and any data files you may create into a single zip file. 
+  - Name the zip file with your Bilkent student ID (e.g., 21400023.zip). 
+  - Upload the zip file to the [IE 451 moodle page](https://moodle.bilkent.edu.tr/2020-2021-fall/).
+  - Be sure that **Rmd file** can be knitted, and the **final version of html file** are submitted.
+    
+<!-- * Reopen the [Rmd file](final.Rmd) with encoding **UTF-8**. -->
+<!-- <!-- * Save your Rmd file with encoding **UTF-8**. --> 
+<!-- * You may use your notes, your textbook, or internet. -->
+<!-- * You may NOT seek help from anybody inside or outside classroom in any form. -->
+
+------
+
+<h3> <center> Homework Questions </center> </h3>
+
+8. In this exercise, you will perform cross-validation on a simulated data set.
+
+   (a) Generate a simulated data set as follows:
+
+       ```{r, eval=FALSE}
+> set.seed(1)
+> y = rnorm(100)
+> x = rnorm(100)
+> y = x - 2*x^2 + rnorm(100)
+```
+        In this data set, what is $n$ and what is $p$? Write out the model used to generate the data in equation form.
+
+**Answer for a)**
+        
+```{r}
+set.seed(1)
+y = rnorm(100)
+x = rnorm(100)
+y = x - 2*x^2 + rnorm(100)
+```
+
+In this data set, n=100 and p=2, because the number of observations is 100 and the degree of polynomial is 2 as the equation is quadratic.
+
+The equation used to generate the data in this data set is as follows;
+
+$$
+y = x - 2x^2 + \varepsilon
+$$
+   (b) Create a scatterplot of $X$ against $Y$. Comment on what you find.
+   
+**Answer for b)**   
+   
+```{r}
+plot(x,y)
+
+
+```
+
+In quadratic equations, by definition, we expect to see a U-shaped parabola. Since the plot is generated using a quadratic model, we see a U-shape here. 
+
+
+
+   (c) Set a random seed, and then compute the LOOCV errors that result from fitting the following four models using least squares:
+
+       i. $Y = \beta_0 + \beta_1 X + \varepsilon$,
+       ii. $Y = \beta_0 + \beta_1 X + \beta_2 X^2 + \varepsilon$,
+       iii. $Y = \beta_0 + \beta_1 X + \beta_2 X^2 + \beta_3 X^3 + \varepsilon$,
+       iv. $Y = \beta_0 + \beta_1 X + \beta_2 X^2 + \beta_3 X^3 + \beta_4 X^4 + \varepsilon.$
+    
+       Note you may find it helpful to use the `data.frame()` function to create a single data set containing both $X$ and $Y$.
+   
+**Answer for c)**   
+
+
+```{r}
+library(boot)
+
+set.seed(1)
+y = rnorm(100)
+x = rnorm(100)
+y = x - 2*x^2 + rnorm(100)
+
+Mydata <- data.frame(x=x,y=y)
+
+```
+
+1) In this case p=1, i.e. the model is linear:
+
+```{r}
+set.seed(1)
+glm.fit=glm(y~x ,data=Mydata)
+loocv.error1=cv.glm(Mydata,glm.fit)
+loocv.error1$delta
+
+```
+
+
+2) In this case p=2, i.e. the model is quadratic:  
+
+
+```{r}
+
+glm.fit=glm(y~poly(x,2),data=Mydata)
+loocv.error2=cv.glm(Mydata,glm.fit)
+loocv.error2$delta
+```
+3) In this case p=3, i.e. the model is cubic:  
+
+```{r}
+
+glm.fit=glm(y~ poly(x,3),data=Mydata)
+loocv.error3=cv.glm(Mydata,glm.fit)
+loocv.error3$delta
+```
+4) In this case p=4, i.e. the model is fourth-degree polynomial:  
+
+```{r}
+
+glm.fit=glm(y~poly(x,4),data=Mydata)
+loocv.error4=cv.glm(Mydata,glm.fit)
+loocv.error4$delta
+```
+
+```{r}
+glm.fit=glm(y~poly(x,5),data=Mydata)
+loocv.error5=cv.glm(Mydata,glm.fit)
+loocv.error5$delta
+```
+
+Summarizing the results (I am taking the first delta value);
+
+```{r}
+summarizingloocv=c(loocv.error1$delta[1],loocv.error2$delta[1],loocv.error3$delta[1],loocv.error4$delta[1],loocv.error5$delta[1])
+
+summarytableforloocv=data.frame("Errors"=summarizingloocv)
+row.names(summarytableforloocv)=c("linear","quadratic","cubic","fourth","fifth")
+summarytableforloocv
+
+```
+
+
+
+Now I'll use k-fold cross validation. Firstly I'm setting k=5, and then k=10. After the calculations, I will compare the results of LOOCV, k-fold with k=5 and k-fold with k=10.
+
+
+A) k-fold cross validation with k=5
+
+```{r}
+set.seed(1)
+
+Kfold_error_with5=rep(5)
+for (i in 1:5){
+glm.fit=glm(y~poly(x ,i),data=Mydata) 
+Kfold_error_with5[i]=cv.glm(Mydata,glm.fit,K=5)$delta[1]
+}
+
+
+kfold5 <- tibble("Model complexity"=c("linear", "quadratic", "cubic",
+                                                                           "fourth","fifth"),"Average prediction rate"= Kfold_error_with5)
+```
+
+
+B) k-fold cross validation with k=10
+
+
+```{r}
+set.seed(1)
+Kfold_error_with10=rep(10)
+for (i in 1:5){
+glm.fit=glm(y~poly(x ,i),data=Mydata) 
+Kfold_error_with10[i]=cv.glm(Mydata,glm.fit,K=10)$delta[1]
+}
+
+kfold10 <- tibble("Model complexity"=c("linear", "quadratic", "cubic",
+                                                                           "fourth","fifth"),"Average prediction rate"= Kfold_error_with10)
+
+cbind(summarytableforloocv,kfold5,kfold10) %>% select[,-2]
+```
+
+
+   (d) Repeat (c) using another random seed, and report your results. Are your results the same as what you got in (c)? Why?
+   
+**Answer for d)**
+
+LOOCV;
+
+```{r}
+set.seed(1912)
+
+glm.fit=glm(y~x,data=Mydata)
+loocv.error1=cv.glm(Mydata,glm.fit)
+
+
+glm.fit=glm(y~poly(x,2),data=Mydata)
+loocv.error2=cv.glm(Mydata,glm.fit)
+
+
+glm.fit=glm(y~poly(x,3),data=Mydata)
+loocv.error3=cv.glm(Mydata,glm.fit)
+
+
+glm.fit=glm(y~poly(x,4),data=Mydata)
+loocv.error4=cv.glm(Mydata,glm.fit)
+
+
+summarizingloocv=c(loocv.error1$delta[1],loocv.error2$delta[1],loocv.error3$delta[1],loocv.error4$delta[1])
+
+summarytableforloocv_differentseed=data.frame("Errors"=summarizingloocv)
+row.names(summarytableforloocv_differentseed)=c("linear","quadratic","cubic","fourth")
+summarytableforloocv_differentseed
+
+
+```
+A) k-fold cross validation with k=5
+   
+```{r}
+set.seed(1912)
+
+Kfold_error_with5=rep(5)
+for (i in 1:4){
+glm.fit=glm(y~poly(x ,i),data=Mydata) 
+Kfold_error_with5[i]=cv.glm(Mydata,glm.fit,K=5)$delta[1]
+}
+
+
+tibble("Model complexity"=c("linear", "quadratic", "cubic",
+                                                                           "fourth"),"Average prediction rate"= Kfold_error_with5)
+```
+
+B) k-fold cross validation with k=10
+   
+```{r}
+set.seed(1912)
+Kfold_error_with10=rep(10)
+for (i in 1:4){
+glm.fit=glm(y~poly(x ,i),data=Mydata) 
+Kfold_error_with10[i]=cv.glm(Mydata,glm.fit,K=10)$delta[1]
+}
+
+
+tibble("Model complexity"=c("linear", "quadratic", "cubic",
+                                                                           "fourth"),"Average prediction rate"= Kfold_error_with10)
+```
+
+   
+*CONCLUSION:*
+
+LOOCV errors are identical, no matter what the seed is. Reason for that, is, since there are n folds in LOOCV (we take out each observation and do cross validation) the errors should be the same independent of the seed, because data as well as the folds are exactly the same.
+
+However, in k-fold approach we got slightly different results. Due to different seeds, folds that have been taken out are different in each case.
+
+Additional interpretation: There is a bias-variance tradeoff between LOOCV and k-fold cross validation. In LOOCV, the bias is very low as the training data set is approximately same as the data itself (we are taking just one observation out of it). However, these training data sets are almost identical, meaning that they are highly positively correlated. By definition, if correlation increases, variance also increases. Lower variances can be obtained by adopting k-fold approach, of course, with a higher bias level.
+   
+
+   (e) Which of the models in (c) had the smallest LOOCV error? Is this what you expected? Explain your answer.
+   
+**Answer for e)**
+
+Quadratic model has the smallest LOOCV error. This is exactly what we should expect, because the data are generated using a quadratic model. In addition to that, quadratic model also has the smallest errors in k-fold cross validations with k=5 and k=10.
+   
+
+------
