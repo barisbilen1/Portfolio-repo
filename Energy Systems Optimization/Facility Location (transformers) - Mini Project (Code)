@@ -1,0 +1,152 @@
+ 
+ // THIS CODE WRITTEN IN MOS AND THE MODEL IS SOLVED VIA XPRESS.
+ 
+ model "FLP"
+ uses "mmxprs"
+
+#Q1)
+
+ declarations
+  ND = 7
+  NF = 3
+  UNIT_COST = 1
+  DEMANDS = 1..ND               
+  FACILITIES = 1..NF                       
+ 
+  DISTANCE: array(DEMANDS, FACILITIES) of integer 
+  COST_f: array(FACILITIES) of integer  
+  
+  a_df: array(DEMANDS, FACILITIES) of mpvar  
+  x_f: array(FACILITIES) of mpvar 
+
+ end-declarations
+
+ initializations from 'project.data'
+  DISTANCE COST_f
+ end-initializations
+
+ ! Objective: minimize cost
+ TotalCost:= sum(f in FACILITIES) COST_f(f) * x_f(f) + sum(d in DEMANDS, f in FACILITIES) a_df(d, f) * DISTANCE(d, f) * UNIT_COST
+
+ ! CONSTRAINTS !
+ sum(f in FACILITIES) x_f(f) >= 1
+ 
+ forall(d in DEMANDS) 
+  sum(f in FACILITIES) a_df(d, f) = 1
+
+forall(f in FACILITIES) 
+ forall(d in DEMANDS)
+  x_f(f) >= a_df(d, f)
+  
+ ! Setting decision variables as binary
+ forall(d in DEMANDS, f in FACILITIES) a_df(d, f) is_binary
+ forall(f in FACILITIES) x_f(f) is_binary
+
+! Solve the problem
+ minimize(TotalCost)
+ 
+ writeln(getsol(TotalCost))
+ forall(f in FACILITIES)
+  writeln(getsol(x_f(f)))
+end-model
+
+
+// FIND THE ASSOCIATED DATA BELOW
+
+
+DISTANCE: [ 10 6  2 
+             8 4  2
+             4 2  4
+             6 4  8
+             2 6 10
+             4 6 10
+             3 5  7 ] 
+             
+COST_f: [30 30 30]
+
+
+#Q2)
+
+model "SCP"
+uses "mmxprs"
+
+ declarations
+  ND = 30
+  NF = 15
+  DEMANDS = 1..ND               
+  FACILITIES = 1..NF                       
+ 
+  COVERAGE: array(FACILITIES, DEMANDS) of integer 
+  
+  x_f: array(FACILITIES) of mpvar 
+
+ end-declarations
+
+ initializations from '2.data'
+  COVERAGE
+ end-initializations
+
+ ! Objective: minimize cost
+ TotalCost:= sum(f in FACILITIES) x_f(f) 
+
+ ! CONSTRAINTS !
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 1) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 2) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 4) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 5) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 6) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 7) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 8) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 9) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 10) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 11) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 12) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 13) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 14) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 15) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 18) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 19) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 20) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 21) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 22) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 23) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 24) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 25) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 26) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 27) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 28) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 29) >= 1
+ sum(f in FACILITIES) x_f(f) * COVERAGE(f, 30) >= 1 
+ 
+ 
+ ! Setting decision variables as binary
+ forall(f in FACILITIES) x_f(f) is_binary
+
+! Solve the problem
+ minimize(TotalCost)
+
+
+ writeln(getsol(TotalCost))
+ forall(f in FACILITIES)
+  writeln(f, "-",  getsol(x_f(f)))
+end-model
+
+
+// FIND THE ASSOCIATED DATA BELOW
+
+
+COVERAGE: [ 1	0	0	0	0	0	0	1	0	0	1	0	1	0	1	0	0	0	1	0	1	0	1	0	0	0	0	0	1	1
+            0	1	0	0	1	1	0	0	1	1	1	0	0	1	0	0	0	0	0	1	1	1	0	0	1	0	0	1	0	0
+            0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	1	1
+            0	0	0	1	1	1	0	0	0	1	0	0	0	1	0	0	0	1	0	1	0	1	0	0	1	1	0	0	0	0
+            0	1	0	1	1	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	1	0	0	0	0
+            0	1	0	1	1	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0	0	0
+            0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	0	0	0	1	1	0	0	0	1	0	0	1	1	0	0
+            1	0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	0	0	1	0	1	0	0	0	0	0	0	1	1	1
+            0	1	0	0	1	1	0	0	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+            0	1	0	1	1	1	0	0	1	1	1	0	0	1	0	0	0	0	0	1	1	1	0	0	1	1	0	1	0	0
+            1	1	0	0	0	0	0	0	1	1	1	0	1	0	1	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0
+            0	0	0	0	0	0	1	0	0	0	0	1	0	1	0	0	0	1	0	1	0	1	0	1	1	1	1	1	0	0
+            1	0	0	0	0	0	0	1	0	0	1	0	1	0	1	0	0	0	1	0	0	0	1	0	0	0	0	0	1	1
+            0	1	0	1	0	0	0	0	0	1	0	1	0	1	0	0	0	1	0	1	1	1	0	1	1	1	1	1	0	0
+            1	0	0	0	0	0	0	0	0	0	1	0	1	0	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0  ]
