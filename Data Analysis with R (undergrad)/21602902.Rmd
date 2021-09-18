@@ -1,0 +1,299 @@
+---
+  title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Midterm Examination </h2>  <h3> done by </h3> <h3> <span style="color:red">*Ali Barış Bilen* </span> </h3>  <h4> <span style="color:red">*21602902* </span> </h4></center>
+  pagetitle: IE 451 Midterm Fall 2020 
+  date: <center> between 8:30 and 12:30 on Wednesday, 11 November 2020</center>
+  output: 
+    bookdown::html_document2:
+      theme: readable
+      toc: true
+---
+  
+```{r setup, include=FALSE}
+library(magrittr)
+library(tidyverse)
+library(knitr)
+opts_chunk$set(echo = TRUE)
+```
+
+<h3> <center> Instructions </center> </h3>
+
+Write your responses below each part in the [Rmd file](midterm.Rmd). 
+
+- You may use your notes, your textbook, or internet.
+- You may NOT offer help to or seek help from anybody inside or outside classroom in any form.
+- After you finish the exam, 
+  - make sure that **Rmd file** can be knitted, and you have created the **final version of html file,**
+  - compress  **Rmd** and **html** files  into a single zip file, 
+  - name the zip file with your Bilkent student ID 
+    - e.g., 21600023.zip, and 
+    - please, do NOT append your name/lastname or any tags like "midterm", etc to file name,
+  - **upload** the zip file to the [IE 451 moodle page](https://moodle.bilkent.edu.tr/2020-2021-fall/).
+    
+<!-- * Reopen the [Rmd file](final.Rmd) with encoding **UTF-8**. -->
+<!-- <!-- * Save your Rmd file with encoding **UTF-8**. --> 
+
+------
+
+<h3> <center> Questions </center> </h3>
+
+A bank's credit card office wants to understand the factors that affect the monthly average balance (namely, outstanding debt) on a credit card of their customers. For  a statistical analysis, the bank provided information in [CreditCard.csv](CreditCard.csv). Each row of the file belongs to a customer, and the columns provide the following information about the customer:
+
+Income
+: annual income in thousand dollars
+
+Limit
+: credit card limit in dollars
+
+Rating
+: credit rating of the customer
+
+Cards
+: number of credit cards that the customer owns
+
+Age
+: age of the customer
+
+Education
+: number of years spent in school
+
+Gender
+: gender (Male/Female)
+
+Student
+: is the customer a student? (Yes/No)
+
+Married
+: is the customer married? (Yes/No)
+
+Balance
+: monthly average credit card balance (debt) in dollars
+
+
+@. Explore the relations between variables; especially, `Balance` and others. Use pairwise scatterplots, histograms, boxplots wherever they are appropriate to use. Describe your findings.
+
+@. Propose a linear regression model for the response `Balance` based on your insights from the previous question.
+
+@. Does you model suggest that there is relation between `Balance` and at least one of the other variables? Explain.
+
+@. How strong is the relation, according to your model, between `Balance` and other variables? Explain.
+
+@. Does a typical student carry more monthly average balance on credit card than others assuming they are similar in other aspects? Explain.
+
+@. Does balance decrease with increasing education while other aspects of customer remain the same? Explain.
+
+@. Who is expected to carry more average monthly balance, a male or female customer, or is there no difference? Why do you think so? Assume that they are similar in other aspects.
+
+@. Does the average monthly balance on credit card tend to increase with the number of credit cards that a customer owns? Explain.
+
+@. Predict monthly average balance for a single 22 years old female student with no other credit card and having average income, limit, rating, and education of all single female students in the data set. Give a 90% prediction interval.
+
+@. Can you suggest a smaller regression model? Does your small model perform as good as your full model? Explain.
+
+------
+**ANSWERS**
+
+**Answer to Q1)**
+
+```{r}
+library(magrittr)
+library(ISLR)
+library(tidyverse)
+library(pander)
+```
+
+
+```{r}
+d <- read.csv(file="CreditCard.csv")
+d %>% 
+  head() %>% 
+  pander(caption = "(\\#tab:auto) Here is a glimpse of our data")
+```
+
+Let us first identify quantitative variables to do analysis and construct pairwise scatterplots. After then, I will identify qualitative variables and construct box-plots to analyze their effects on *balance*.
+
+```{r}
+quant<- d %>% 
+  select_if(is.numeric) %>% 
+  names()
+quant
+```
+
+These are our quantitative variables.
+
+```{r, fig.asp=1}
+panel.hist <- function(x, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col = "green", ...)
+}
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y,"complete.obs"))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+
+d %>% 
+  select_if(is.numeric) %>% 
+  pairs(diag.panel = panel.hist, 
+        upper.panel = function(...) panel.smooth(..., lwd=2, col="yellow"), 
+        lower.panel = panel.cor)
+```
+
+By looking at this set of plots, we can observe;
+
+**Finding 1)** 
+
+*Limit* and *rating* are almost linearly related to each other. This claim is also supported by the correlation between them, which is 99%. This may cause some collinearity problems. We have to fix this later.
+
+**Finding 2)** 
+I see that most of the histograms are right-skewed. This again may cause some problems. It would be nice to put them in a symmetric form. I will apply log transformation to those who have right-skewed distributions. I am excluding *Age* and *Education* at this stage because they seem to be OK in terms of symmetry of the histograms. 
+
+```{r}
+d2 <- d %>% 
+  select_if(is.numeric) %>% 
+  mutate_at(vars(-Age,-Education), log) %>% 
+  pairs(diag.panel = panel.hist, 
+        upper.panel = function(...) panel.smooth(..., lwd=2, col="yellow"), 
+        lower.panel = panel.cor)
+```
+It is better now. All histograms (except the *balance*) present symmetric distribution. We can continue with this transformation.
+
+**Finding 3)** 
+*Income* seems to increase when *limit* increases.
+
+**Finding 4)**
+*Rating* and *limit* tends to increase as *balance* increases.
+
+Now I will analyze the relationship between qualitative variables and the response(*balance*) with Box-plots. Let us first identify qualitative variables.
+
+Our qualitative variables are; *Gender*, *Married* and *Student*.
+
+```{r}
+d %>% 
+        ggplot(aes(Gender,Balance)) +
+        geom_boxplot()
+```
+**Finding 5)**
+
+*balance* of female customers seem to be more than those of male customers. Although their medians are the same, most of the observations of *balance* is greaterin female customers, as we can infer from the box-plots above.
+
+```{r}
+d %>% 
+        ggplot(aes(Married,Balance)) +
+        geom_boxplot()
+```
+**Finding 6)**
+
+The range of the outstanding debt observations are larger for single people. Their medians are almost the same. There is not much to say here with these box plots.
+
+```{r}
+d %>% 
+        ggplot(aes(Student,Balance)) +
+        geom_boxplot()
+```
+
+**Finding 7)**
+
+It is very clear that outstanding debt of most of the students are greater than those who are not students.
+
+**Answer to Q2**
+
+I decide not to apply log transformation anymore. The code gave an error when I try to construct a linear regression model with function lm().I think this is because of the zeros in the data. From now, I will continue with the original data.
+
+```{r}
+
+
+linearmod <- lm(Balance~.,d)
+linearmod %>% summary() 
+
+```
+**Answer to Q3**
+
+To answer this question, we should look at the p-value of the F-statistics of the regression model. By default, F-statistics is used to test $H_0$ : "There is no relationship between any of the variables and the response" against $H_A$ : At least one estimator is not equal to zero.
+
+In this case, p-value of the F-statistic is almost zero. Thus we should reject the null hypothesis and conclude that there is a relationship between *balance* and other variables. At least one of the explanatory variables  and response is related.
+
+**Answer to Q4**
+
+To answer this question, we should look at $R^2$ value. $R^2$ value for this regression is nearly 95%, which means, 95% of the variation in our response variable is explained by other variables. This indicates strong relationship.
+
+**Answer to Q5**
+
+
+I think we can answer this question by looking at the box plots I created in the previous answer. We can infer that a typical student carries more monthly average balance on credit card than others while all the other variables remain the same.
+
+
+*Answer to Q6**
+
+Range of estimator for the *Education* includes zero. So, we should first determine whether it has a significant effect on *Balance* or not. We must make sure that its coefficient is different than zero. To check this, we look at the p-value of the t-test table of summary output. It is p-value is reaally high (0.48). We are not able to reject the null hypothesis ($H_0$:*Education* is not significant, i.e. its coefficient=0). We conclude that *Education* does not have a significant effect on *Balance*. Answering the question, we cannot say that *Balance* decrease with increasing *education*.
+
+**Answer to Q7**
+
+We again look at the p-value of the t-test of *Gender* variable in the summary output. The p-value is 0.2940, which is again a really high p-value. We are unable to reject to null hypothesis($H_0$:*Gender* is not significant, i.e. its coefficient=0). We conclude that *Gender* does not have a significant effect on *Balance*. Answering the question, there is no difference between males and females in terms of monthly average balance.
+
+**Answer to Q8**
+
+We again look at the p-value of t-test of *Cards* variable in the summary output. It is 4.31e-05, nearly zero. We reject the null hypothesis($H_0$:*Cards* is not significant, i.e. its coefficient=0).This indicates *Cards* has significant effect on *Balance*. Its coefficient is 17.92, which is a positive value. Answering the question, average monthly balance on credit card tends to increase with the number of cards that a customer owns.
+
+**Answer to Q9**
+
+Firstly I set *Cards*=1, *Gender*=Female and *Age*=2 and *Married*=No, *Student*=Yes. Then, as suggested in the question, I set all the other variables to their average values.
+
+```{r}
+d2 <- d%>% 
+  mutate_at(vars("Gender","Married","Student"),factor)
+
+data_quant <- d2 %>% 
+  dplyr::select_if(is.numeric) %>% 
+  map_df(median)
+
+data_qual <- d2 %>% 
+  dplyr::select_if(is.factor) %>% 
+  map_df(~{.x %>% table %>% names %>% .[1]})
+  
+newdata <- list(data_quant, data_qual) %>% 
+  bind_cols() %>% 
+  mutate(Age = 22,Gender="Female",Cards=1,Married="No",Student="Yes") %>% 
+  dplyr::select(-Balance)
+
+newdata %>% 
+  pander(caption = "New data at which the prediction will be calculated.")
+```
+
+```{r}
+predict(linearmod, newdata = newdata, interval = "prediction", level = 0.90) %>% 
+  as_tibble() %>% 
+ 
+  pander(caption = "(\\#tab:conf) Expected Balance value with 90% confidence interval")
+```
+
+
+Monthly average balance for a single 22 years old female student with no other credit card and having average income, limit, rating, and education of all single female students is 949.3 on average with lower bound 783 and upper bound 1116.
+
+**Answer to Q10**
+
+In questions 6 and 7, I conclude that *Gender* and *Education* do not have a significant effect on *Balance*. So I remove them to make a smaller model. Then I will test whether my small model perform as good as my full model.
+
+```{r}
+linearmod <- lm(Balance ~ ., d)
+smalllinmod <- update(linearmod, . ~ . - Gender - Eduation)
+
+anova(smalllinmod, linearmod)
+```
+
+
+p-value is not small enough at 90% or 95%. Therefore, we are unable to reject $H_0$ i.e. the small model. We can remove *Gender* and *Education* at the same time and our model will perform still as good as the full model.
+
+**END**
+
+
