@@ -1,0 +1,110 @@
+/*********************************************
+ * OPL 12.10.0.0 Model
+ * Author: baris.bilen
+ * Creation Date: Mar 21, 2021 at 1:39:54 PM
+ *********************************************/
+
+
+// THIS CODE WRITTEN IN OPL AND THE MODEL IS SOLVED VIA CPLEX SOLVER.
+
+
+ 
+ //Setting Parameters
+
+ float Cost_of_grid_electricity = ...;
+ float Cost_of_a_panel_per_m2 = ...;
+ float Discount_factor_for_panel = ...;
+ 
+ range time = 1..60;
+ range time2 = 0..60;
+ range time3 = -1..60;
+ 
+ float Energy_generation[time] = ...;
+ int Hourly_demand[time] = ...;
+ 
+ 
+ //Setting decision variables
+ 
+ dvar int panel_size;
+ dvar float Grid_usage[time];
+ dvar float Solar_energy_used[time];
+ dvar float Energy_curtailed[time];
+ dvar float shifted_energy[time2];
+ dvar float shifted_energy_2[time3]; 
+  //Objective function
+ 
+ dexpr float Total_grid_cost = (sum(i in time) Grid_usage[i]) * Cost_of_grid_electricity;
+ dexpr float Total_solar_panel_cost = (panel_size)*(Discount_factor_for_panel)*(Cost_of_a_panel_per_m2);
+ 
+ minimize Total_solar_panel_cost + Total_grid_cost; 
+
+  
+ //Constraints
+ 
+ subject to{
+       
+   panel_size >= 0;   
+   
+ 
+   shifted_energy_2[0] == 0;
+   
+   shifted_energy_2[60] == 0;
+   
+   shifted_energy_2[59] ==0;
+   
+   shifted_energy_2[-1] == 0;
+   
+   shifted_energy[0] == 0;
+   
+   forall(i in time)
+     shifted_energy[i] >= 0;
+   forall(i in time)
+     shifted_energy_2[i] >= 0;     
+   
+   shifted_energy[60] == 0;
+     
+   forall(i in time)
+     shifted_energy[i] <= Hourly_demand[i];
+     
+       
+   forall (i in time)
+       Grid_usage[i] >= 0;
+
+   forall (i in time)
+       Solar_energy_used[i] >= 0;
+   forall (i in time)
+       (Energy_curtailed[i]) >= 0;
+       
+   forall (i in time)
+     Generation_constraint:
+       Energy_generation[i]*panel_size == Solar_energy_used[i] +  Energy_curtailed[i];
+	
+	forall (i in time)
+     Demand_constraint:
+       Hourly_demand[i]  + shifted_energy_2[i-2] + shifted_energy[i-1] - shifted_energy[i] - shifted_energy_2[i] == Solar_energy_used[i] + Grid_usage[i] ;  
+       
+}
+ 
+
+
+// FIND THE ASSOCIATED DATA BELOW
+
+
+ //Scalar parameters
+
+Cost_of_grid_electricity = 0.27;
+Discount_factor_for_panel = 0.01610421;
+Cost_of_a_panel_per_m2 = 200;
+
+
+
+//Time series data
+
+SheetConnection my_sheet("hw3-data.xlsx");
+
+Energy_generation from SheetRead(my_sheet, "data_and_calculations!E2:E61");
+Hourly_demand from SheetRead(my_sheet, "data_and_calculations!D2:D61");
+
+
+
+
