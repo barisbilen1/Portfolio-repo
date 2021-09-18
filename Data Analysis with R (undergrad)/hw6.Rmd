@@ -1,0 +1,243 @@
+---
+  title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 6 </h2>  <h3> done by </h3> <h3> <span style="color:red">*Ali Barış Bilen* </span> </h3>  <h4> <span style="color:red">*21602902* </span> </h4></center>
+  pagetitle: IE 451 Homework 6 Fall 2020 
+  date: <center> Do not return. For self-study. We will post the solutions by 6 January 2021, Wednesday. </center>
+  output: 
+    bookdown::html_document2:
+      theme: readable
+      toc: true
+---
+  
+```{r setup, include=FALSE}
+library(magrittr)
+library(tidyverse)
+library(knitr)
+library(leaps)
+library(ISLR)
+library(glmnet)
+library(MASS)
+opts_chunk$set(echo = TRUE)
+```
+
+@. Read Section 4.5 from Section 4. Revisit Exercise 10 on page 171. 
+    * Calculate ROC and AUC for the logistic regression, once on the full dataset, and again on train and test sets described in part (d).
+    * Find the threshold that gives the closest point on the test ROC to (0,1) point. Report the test confusion table for that threshold.
+    
+    
+## Answer a)
+
+### on the full data set
+
+```{r}
+d <- Weekly
+d <- na.omit(d)
+glm.full <- glm(Direction ~ Lag1+Lag2+Lag3+Lag4+Lag5+Volume , 
+               data = d, 
+               family = "binomial")
+```
+
+**full data set, with predictor *Lag2* **
+
+```{r}
+library(modelr)
+
+roc_glm <- d %>% 
+  add_predictions(glm.full, type = "response") %>% 
+  dplyr::select(Direction, pred) %>% 
+  arrange(desc(pred)) %>% 
+  mutate(TP = cumsum(Direction == "Up"),
+         FP = cumsum(Direction == "Down"),
+         TPR = TP / sum(Direction == "Up"),
+         FPR = FP / sum(Direction == "Down"))
+
+roc_glm %>% 
+  ggplot(aes(FPR, TPR)) +
+  geom_point() +
+  coord_fixed() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(title = "ROC for logistic regression")
+
+```
+
+**calculation of AUC**
+
+```{r}
+f_glm<- approxfun(roc_glm$FPR, roc_glm$TPR)
+(AUC_full<-integrate(f_glm, 0, 1)$value)
+```
+It is 55%. Not good, random assignment is 50% !
+
+## Training data
+
+```{r}
+train.data<-d[,"Year"] <= 2000
+
+glm.train <- glm(Direction ~ Lag2 , 
+               data = d,subset = train.data, 
+               family = "binomial")
+
+
+
+roc_glm.train <- d %>% filter(Year>2000) %>% 
+  add_predictions(glm.train, type = "response") %>% 
+  dplyr::select(Direction, pred) %>% 
+  arrange(desc(pred)) %>% 
+  mutate(TP = cumsum(Direction == "Up"),
+         FP = cumsum(Direction == "Down"),
+         TPR = TP / sum(Direction == "Up"),
+         FPR = FP / sum(Direction == "Down"))
+
+roc_glm.train %>% 
+  ggplot(aes(FPR, TPR)) +
+  geom_point() +
+  coord_fixed() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(title = "ROC for logistic regression")
+```
+
+```{r}
+f_glm.train<- approxfun(roc_glm.train$FPR, roc_glm.train$TPR)
+(AUC_train<-integrate(f_glm.train, 0, 1)$value)
+```
+Following code calculates the minimum distance between (0,1) and tpr-fpr curve.
+
+```{r}
+distance<-sqrt(roc_glm$FPR^2+(1-roc_glm$TPR)^2)
+v<-data.frame(roc_glm$FPR,roc_glm$TPR,distance)
+mind<-min(distance)
+
+v %>% filter(distance==mind)
+```
+
+```{r}
+a<-d  %>% 
+  add_predictions(glm.full, type = "response") %>% 
+  dplyr::select(Direction, pred) %>% 
+  arrange(desc(pred))
+
+
+actual.down= a%>% filter(Direction=="Down") %>% nrow #number of actual Down
+
+floor(0.6330579*actual.down)
+```
+```{r}
+b<-a%>%filter(Direction=="Down")
+b[floor(0.6330579*actual.down),] %>% dplyr::select(pred)
+```
+
+We round it to 0.54. The confusion matrix becomes;
+
+```{r}
+glm.probs <- predict(glm.full,type = "response")
+glm.pred <- rep("Down",nrow(a))
+glm.pred[glm.probs<0.54] = "Up"
+
+table(glm.pred,a[,"Direction"])
+```
+```{r}
+mean(glm.pred==d$Direction)
+```
+
+
+# Q2
+
+Grades.csv reports the grades of students on various tasks in a statistics course. Try several models to explain the variation in Final exam grades by means of the other assessment grades. Select the best of all your models. Justify your selection. I expect you to explore data with graphics, check non-linearities and interactions with effect plots, regression diagnostics, do variable selection, report how good your model fits
+
+```{r}
+df <- read.csv("Grades.csv")
+library(corrplot)
+df %>% 
+  select_if(is.numeric) %>% 
+  cor(use = "pairwise.complete.obs") %>% 
+  corrplot(type = "lower", diag = FALSE, order = "hclust")
+```
+
+```{r}
+lmod <- lm(Final~., data=df)
+car::vif(lmod)
+```
+
+```{r}
+panel.hist <- function(x, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col = "cyan", ...)
+}
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    rr <- cor(x, y)
+    r <- abs(rr)
+    txt <- format(c(rr, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+
+df %>% 
+  mutate(Homework.tf=Homework^(1/2)) %>%
+  pairs(diag.panel = panel.hist,
+        lower.panel = panel.cor,
+        upper.panel = function (...) panel.smooth(..., lwd = 2, col = "darkgray"))
+```
+```{r}
+plot(lmod)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@. [Grades.csv](Grades.csv) reports the grades of students on various tasks in a statistics course. Try several models to explain the variation in `Final` exam grades bymeans of the other assessment grades. Select the best of all your models. Justify your selection. I expect you to explore data with graphics, check non-linearities and interactions with effect plots, regression diagnostics, do variable selection, report how good your model fits.
+
+@. In [Grades.csv](Grades.csv), create a new variable `FinalAboveAverage` defined as "Yes" if `Final` is greater than the `Final` average and "No" otherwise. Remove `Final` grades from the data. Try several models to explain the variation in `FinalAboveAverage` bymeans of the other assessment grades. Select the best of all your models. Justify your selection. I expect you to explore data with graphics, check non-linearities and interactions with effect plots, regression diagnostics, do variable selection, report how good your model fits.
+
+
+
+```{r}
+df2<- df%>%mutate(FinalAboveAverage=as.factor(ifelse(Final>=mean(Final),"Yes","No"))) %>% dplyr::select(-Final)
+```
+
+```{r}
+glm.0<-glm(FinalAboveAverage~Midterm1+Midterm2+Homework+Project,data= df2, family="binomial")
+
+summary(glm.0)
+```
+```{r}
+step(glm.0)
+```
+```{r}
+library(effects)
+allEffects(glm.0, partial.residuals = TRUE) %>% plot()
+```
+```{r}
+glm.1<-glm(FinalAboveAverage~Midterm1+Midterm2,data= df2, family="binomial")
+
+plot(glm.1)
+
+```
+
+
+
+
+
+
