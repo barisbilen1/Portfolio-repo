@@ -1,0 +1,210 @@
+---
+title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 4 </h2>  <h3> done by </h3> <h3> <span style="color:red">*ALİ BARIŞ BİLEN* </span> </h3>  <h4> <span
+  style="color:red">*21602902*
+pagetitle: IE 451 Quiz Fall 2019
+date: "<center> due 19:00 on Saturday, 12 December 2020</center>"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  bookdown::html_document2:
+    theme: readable
+    toc: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(magrittr)
+library(tidyverse)
+library(pander)
+library(glmnet)
+library(leaps)
+```
+
+# Answers to exercise 9
+
+## Answer to a)
+
+```{r}
+library(ISLR)
+set.seed(1912)
+data <- College
+data2 <- na.omit(data)
+
+trainingrows <- (1:nrow(data2) %>% sample())[1:round(3/4*nrow(data2))]
+training_data <- data2 %>% slice(trainingrows)
+test_data <- data2 %>% slice(setdiff(1:nrow(data2),trainingrows))
+```
+
+## Answer to b)
+
+```{r}
+lsfit <- lm(Apps~., data=training_data)
+sumlsfit <- summary(lsfit)
+
+predlse <- predict(lsfit,test_data) #fitting model to test data
+test.mse.with.lse=mean((test_data$Apps-predlse)^2) #calculating MSE 
+test.mse.with.lse
+```
+
+Test MSE (error on unseen data) is 829,769.8.
+
+## Answer to c)
+
+```{r}
+X.training <- training_data %>% model.matrix(Apps~.,.) #splitting training and test
+X.test <- test_data %>% model.matrix(Apps~.,.)
+y.training <- training_data$Apps
+y.test <- test_data$Apps
+
+ridge <- cv.glmnet(X.training,y.training,alpha=0,nfolds=10) #finding lambda with cross validation, k=10
+ridge$lambda.min
+ridge.fit <- glmnet(X.training,y.training,alpha=0,lambda=ridge$lambda.min)
+
+predridge <- predict(ridge.fit,X.test) #fitting model to test data
+test.mse.with.ridgefit=mean((y.test-predridge)^2)
+test.mse.with.ridgefit
+```
+Test MSE with ridge regression is 710,046.6 $\lambda$ used here is 388.4546, which is found by k-fold cross validation using cv.glmnet().
+
+## Answer to d)
+
+```{r}
+lasso <- cv.glmnet(X.training,y.training,alpha=1,nfolds=10) #finding lambda with cross validation, k=10
+lasso$lambda.min
+lasso.fit <- glmnet(X.training,y.training,alpha=1,lambda=lasso$lambda.min)
+coef(lasso.fit) #to find non-zero coefficient estimates
+
+predlasso <- predict(lasso.fit,X.test) #fitting model to test data
+test.mse.with.lassofit=mean((y.test-predlasso)^2)
+test.mse.with.lassofit
+```
+
+18 coefficient estimates (including the intercept) are non-zero. And the test error is 804,711.8.$\lambda_{min}$ is 2.07, which is again found by k-fold cross validation using cv.glmnet().
+
+## Answer to g)
+
+Comments:
+```{r}
+comparisontable <- tibble("regression method"=c("least squares(default regression produced by lm()","lasso"),"Test MSE"=c(test.mse.with.lse,test.mse.with.lassofit))
+```
+
+```{r}
+comparisontable
+```
+
+*Comment:* Test MSE of lasso model is less than that of the model produced by the least squares method(the model that lm() proposes by default). Eventhough the lasso model performs better than the linear model proposed by the least squares approach, its MSE is also very high. Meaning that, the predictions done by the lasso model will not be that much accurate too.
+
+# Answers to Exercise 11
+
+## Answer for a)
+
+Let's apply best subset selection first.
+
+```{r}
+databoston <- na.omit(MASS::Boston)
+
+best_subset_selection <- regsubsets(crim~.,databoston,nvmax=13)
+summary(best_subset_selection)
+```
+
+```{r}
+summary(best_subset_selection)$cp %>% which.min()
+summary(best_subset_selection)$bic %>% which.min() 
+summary(best_subset_selection)$adjr2 %>% which.max() 
+```
+
+AIC, BIC and Adjusted $R^2$ proposed models with 8, 3 and 9 variables respectively. BIC's result seems like outstanding, that's why I prefer to rely on $C_p$ (AIC) here and use 8-variable model. In the 8-variable model, regsubsets() tells us to include the following variables into our model; *zn*, *nox*, *dis*, *rad*, *ptratio*, *black*, *lstat* and *medv*.
+
+```{r}
+res.regsubsets <- lm(crim~zn+nox+dis+rad+ptratio+black+lstat+medv,databoston)
+summary(res.regsubsets)
+coef(res.regsubsets,id=8)
+```
+*lstat* and *ptratio* seems not to be significant for the model at a significance level of 95%. I am excluding them and continuing with the remaining 6 variables.
+
+```{r}
+res.regsubsets2 <- lm(crim~zn+nox+dis+rad+black+medv,databoston)
+summary(res.regsubsets2)
+coef(res.regsubsets2,id=6)
+```
+
+Secondly, I apply lasso regression.
+
+```{r}
+library(glmnet)
+
+X <- model.matrix(crim ~ ., databoston)[ ,-1]
+y <- databoston$crim
+
+lasso2 <- cv.glmnet(X,y,alpha=1,nfolds=10) #finding lambda with cross validation, k=10
+lasso2$lambda.min
+lasso.fit2 <- glmnet(X,y,alpha=1,lambda=lasso2$lambda.min)
+plot(lasso2)
+coef(lasso.fit2)
+```
+
+Lasso regression proposes 11-variable model as the most appropriate model. Coefficients are above.
+
+Thirdly, I apply ridge regression.
+
+```{r}
+ridge2 <- cv.glmnet(X,y,alpha=0,nfolds=10) #finding lambda with cross validation, k=10
+ridge2$lambda.min
+ridge.fit2 <- glmnet(X,y,alpha=0,lambda=ridge2$lambda.min)
+plot(ridge2)
+coef(ridge.fit2)
+```
+
+Ridge regression, as expected, proposes 13-variable model. Ridge regression does not eliminate any variable in general. Coefficients are above.
+
+## Answer for b)
+
+Calculating test MSEs of best subset selection and lasso;
+
+```{r}
+predbestsubset <- predict(res.regsubsets2,databoston)
+test.mse.with.bestsubset <- mean((y-predbestsubset)^2)
+test.mse.with.bestsubset
+
+predlasso2 <- predict(lasso.fit2,X)
+test.mse.with.lasso2 <- mean((y-predlasso2)^2)
+test.mse.with.lasso2
+
+predridge2 <- predict(ridge.fit2,X)
+test.mse.with.ridge2 <- mean((y-predridge2)^2)
+test.mse.with.ridge2
+```
+
+
+```{r}
+msetable <- tibble("fitted regression of the model"=c("best subset selection","lasso","ridge"),MSE=c(test.mse.with.bestsubset,test.mse.with.lasso2,test.mse.with.ridge2))
+msetable
+```
+
+The model proposed by lasso regression gives us the lowest test MSE.
+The model is as follows;
+
+```{r}
+finalmodel <- lm(crim~.-tax-age,databoston)
+summary <- summary(finalmodel)
+summary
+```
+
+## Answer to c)
+
+My model does not involve all the features in the data set. For example, it doesn't include *tax* and *age* as predictors. Lasso regression (by its penalizing structure) of suggested that the explanatory power of these two variables are negligible(none). If we had include them in the model, they will do nothing but increase the error term. That's why we omit those variables.
+
+**Important note:** In the model some variables seem to be insignificant as their p-values are higher than 0.05. Those are *indus*, *chas*, *rm* and *ptratio*. On this issue, Savaş Hoca said that if we are dealing with social sciences, i.e. we want to find which factors affect the response, we can remove them. On the other hand, if we want to make more accurate predictions, we should keep them in the model. This decision is up to the analyst.
+
+
+
+
+
+
+
+
