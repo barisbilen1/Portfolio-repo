@@ -1,0 +1,109 @@
+/*********************************************
+ * OPL 12.10.0.0 Model
+ * Author: baris.bilen
+ * Creation Date: 20 S 2021 at 18:07:08
+ *********************************************/
+
+// THIS CODE WRITTEN IN OPL AND THE MODEL IS SOLVED VIA CPLEX SOLVER.
+
+
+
+ //Setting Parameters
+
+ int Storage_capacity = ...;
+ float Cost_of_grid_electricity = ...;
+ float Storage_efficiency = ...;
+ float Cost_of_a_single_turbine = ...;
+ float Discount_factor_for_turbine = ...;
+ float Discount_factor_for_storage = ...;
+ float Cost_of_storage = ...;
+ 
+ range time = 1..168;
+ range time4 = 0..168;
+ 
+ int Energy_generation[time] = ...;
+ int Hourly_demand[time] = ...;
+ 
+// int Storage_level[time] = ...;
+ 
+ //Setting decision variables
+ 
+ dvar int Turbine_count;
+ dvar float Grid_usage[time];
+ dvar float Storage_level[time4];
+ dvar float Energy_stored[time];
+ dvar float Energy_discharged[time];
+ dvar float Wind_energy_used[time];
+ dvar float Energy_curtailed[time];
+ dvar int Storage_cap_dec_var;
+  
+  //Objective function
+ 
+ dexpr float Total_grid_cost = (sum(i in time) Grid_usage[i])*Cost_of_grid_electricity;
+ dexpr float Total_wind_turbine_cost = (Turbine_count)*(Discount_factor_for_turbine)*(Cost_of_a_single_turbine);
+ dexpr float Total_storage_cost = (Cost_of_storage)*(Discount_factor_for_storage)*(Storage_cap_dec_var);
+ 
+ minimize Total_wind_turbine_cost + Total_grid_cost + Total_storage_cost; 
+  
+ //Constraints
+ 
+ subject to{
+       
+   Turbine_count >= 0;   
+       
+   forall (i in time)
+       Grid_usage[i] >= 0;
+   forall (i in time)
+       Storage_level[i] >= 0;
+   forall (i in time)
+       Energy_stored[i] >= 0;
+   forall (i in time)
+       Energy_discharged[i] >= 0;
+   forall (i in time)
+       Wind_energy_used[i] >= 0;
+   forall (i in time)
+       Energy_curtailed[i] >= 0;
+       
+   forall (i in time)
+     Generation_constraint:
+       Energy_generation[i]*Turbine_count == Wind_energy_used[i] + Energy_stored[i] + Energy_curtailed[i];
+       
+  
+   Storage_level[0] == 0;
+            
+   forall (i in time)
+     Storage_constraint1:
+       Storage_level[i] == Storage_level[i-1] + (Storage_efficiency*Energy_stored[i]) - ((1/Storage_efficiency)*Energy_discharged[i]);
+       
+   forall (i in time)
+     Storage_constraint2:
+       Storage_level[i] <= Storage_cap_dec_var;
+       
+   forall (i in time)
+     Demand_constraint:
+       Hourly_demand[i] <= Wind_energy_used[i] + Energy_discharged[i] + Grid_usage[i];  
+ }
+ 
+ 
+ 
+ // FIND THE ASSOCIATED DATA BELOW
+ 
+ 
+ //Scalar parameters
+
+Storage_capacity = 500;
+Cost_of_grid_electricity = 0.35;
+Discount_factor_for_turbine = 0.0050076516;
+Discount_factor_for_storage = 0.0050280995;
+Cost_of_storage = 300;
+Cost_of_a_single_turbine = 2500000;
+Storage_efficiency = 0.88;
+
+//Time series data
+
+SheetConnection my_sheet("hw1-data.xlsx");
+
+Energy_generation from SheetRead(my_sheet, "data_and_calculations!K2:K169");
+Hourly_demand from SheetRead(my_sheet, "data_and_calculations!D2:D169");
+
+
