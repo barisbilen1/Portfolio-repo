@@ -15,24 +15,7 @@ library(knitr)
 opts_chunk$set(echo = TRUE)
 ```
 
-<h3> <center> Instructions </center> </h3>
-
-Write your responses below each part in the [Rmd file](midterm.Rmd). 
-
-- You may use your notes, your textbook, or internet.
-- You may NOT offer help to or seek help from anybody inside or outside classroom in any form.
-- After you finish the exam, 
-  - make sure that **Rmd file** can be knitted, and you have created the **final version of html file,**
-  - compress  **Rmd** and **html** files  into a single zip file, 
-  - name the zip file with your Bilkent student ID 
-    - e.g., 21600023.zip, and 
-    - please, do NOT append your name/lastname or any tags like "midterm", etc to file name,
-  - **upload** the zip file to the [IE 451 moodle page](https://moodle.bilkent.edu.tr/2020-2021-fall/).
-    
-<!-- * Reopen the [Rmd file](final.Rmd) with encoding **UTF-8**. -->
-<!-- <!-- * Save your Rmd file with encoding **UTF-8**. --> 
-
-------
+-----
 
 <h3> <center> Questions </center> </h3>
 
@@ -185,7 +168,7 @@ d %>%
 ```
 **Finding 5)**
 
-*balance* of female customers seem to be more than those of male customers. Although their medians are the same, most of the observations of *balance* is greaterin female customers, as we can infer from the box-plots above.
+*balance* of female customers seem to be more than those of male customers. Although their medians are the same, most of the observations of *balance* is greater in female customers, as we can infer from the box-plots above.
 
 ```{r}
 d %>% 
