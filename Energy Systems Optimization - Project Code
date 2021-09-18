@@ -130,3 +130,45 @@ subject to{
 		Water_Spilled[i][t] >= 0;	
 
 } 
+
+
+// FIND THE ASSOCIATED DATA BELOW
+
+
+// Parameters
+ 
+length_of_time_periods = 24;							// 24h-data
+Discount_factor_for_hydropower = 0.0528;
+Discount_factor_for_solarpower = 0.0651;
+Discount_factor_for_transmission = 0.0582;
+Gravity = 9.8; 											// m/s^2
+Efficiency_of_hydros = 0.88;			
+Efficiency_of_solar = 0.12;
+Unit_cost_of_reservior = 3;								// $/m^3
+Unit_cost_of_generator_capacity = 500;					// $/kW
+Unit_cost_of_solar = 160;								// $/m^2
+Unit_cost_of_transmission = 0.01;						// $/kWh	
+Unit_cost_of_grid = 0.05;								// $/kWh
+Power_loss= 0.2;
+Height_of_reservoir = [80,100,60,70,90,80,75];
+
+
+// Time Series Data
+
+SheetConnection my_sheet("Random_Data_12.xlsx");
+
+Demand from SheetRead(my_sheet,"RandData!C3:NC12");
+Solar_radiation from SheetRead(my_sheet,"RandData!C44:NC53");
+Water_inflow from SheetRead(my_sheet,"RandData!C31:NC37");
+
+// writing results to an excel file
+
+SheetConnection excelresult("C:\\Users\\asus\\opl\\proje12\\results.xlsx");
+
+Grid_Usage to SheetWrite(excelresult, "Sheet2!A2:OK20");
+Maximum_Energy_Transmission to SheetWrite(excelresult, "Sheet1!A2:OK20");
+
+
+
+
+
