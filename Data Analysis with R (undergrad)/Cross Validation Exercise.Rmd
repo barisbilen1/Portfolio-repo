@@ -15,28 +15,15 @@ library(knitr)
 opts_chunk$set(echo = TRUE)
 ```
 
-* Read
-  * Section 1 of Chapter 3,
-  * Sections 1 and 3.1-3.3 of Chapter 5 
-from ISLR.
 
-* Solve Exercise 8 (a)-(e) at the end of Chapter 5. Write your responses below each part in the [Rmd file](hw2.Rmd). 
+* Solve Exercise 8 (a)-(e) at the end of Chapter 5, ISLR. Write your responses below each part in the [Rmd file](hw2.Rmd). 
 
-  - Compress  **Rmd**, **html**, and any data files you may create into a single zip file. 
-  - Name the zip file with your Bilkent student ID (e.g., 21400023.zip). 
-  - Upload the zip file to the [IE 451 moodle page](https://moodle.bilkent.edu.tr/2020-2021-fall/).
-  - Be sure that **Rmd file** can be knitted, and the **final version of html file** are submitted.
-    
-<!-- * Reopen the [Rmd file](final.Rmd) with encoding **UTF-8**. -->
-<!-- <!-- * Save your Rmd file with encoding **UTF-8**. --> 
-<!-- * You may use your notes, your textbook, or internet. -->
-<!-- * You may NOT seek help from anybody inside or outside classroom in any form. -->
 
 ------
 
 <h3> <center> Homework Questions </center> </h3>
 
-8. In this exercise, you will perform cross-validation on a simulated data set.
+In this exercise, you will perform cross-validation on a simulated data set.
 
    (a) Generate a simulated data set as follows:
 
