@@ -1,0 +1,132 @@
+/*********************************************
+ * OPL 12.10.0.0 Model
+ * Author: baris.bilen
+ * Creation Date: May 7, 2021 at 10:27:19 AM
+ *********************************************/
+
+ //Setting Parameters
+
+int length_of_time_periods = ...;							// 24h-data
+float Discount_factor_for_hydropower = ...;
+float Discount_factor_for_solarpower = ...;
+float Discount_factor_for_transmission = ...;
+float Gravity = ...; 										// m/s^2
+float Efficiency_of_hydros = ...;			
+float Efficiency_of_solar = ...;
+float Unit_cost_of_reservior = ...;							// $/m^3
+float Unit_cost_of_generator_capacity = ...;				// $/kW
+float Unit_cost_of_solar = ...;								// $/m^2
+float Unit_cost_of_transmission = ...;						// $/kWh	
+float Unit_cost_of_grid= ...;								// $/kWh
+float Power_loss= ...;
+
+range demand = 1..10;
+range reservoir = 1..7;
+range time = 1..365;
+range time2 = 0..365;
+
+float Water_inflow[reservoir][time] = ...;
+float Solar_radiation[demand][time]= ...;
+float Demand[demand][time] = ...;						
+float Height_of_reservoir[reservoir]= ...;
+
+//Setting Decision Variables
+
+dvar float Size_of_the_Reservoir[reservoir] ;
+dvar float Size_of_the_SolarPanel[demand] ;
+dvar float Size_of_the_Generator[reservoir] ;
+dvar float Maximum_Energy_Transmission[reservoir][demand] ;
+dvar float Water_Size[reservoir][time2] ;
+dvar float Grid_Usage[demand][time]  ;
+dvar float Electricity_Sent[reservoir][demand][time] ;
+dvar float Water_Spilled[reservoir][time]  ;
+dvar float Water_Released[reservoir][time] ;
+//dvar boolean binary_var[time];
+
+
+// Objective function
+
+dexpr float Cost_of_Reservoir =  sum(i in reservoir) (Unit_cost_of_reservior * Size_of_the_Reservoir[i]) ;
+
+dexpr float Cost_of_Hydropower_Generators = ( sum(i in reservoir) Unit_cost_of_generator_capacity * Size_of_the_Generator[i] );
+
+dexpr float Cost_of_Solar = ( sum(j in demand)  Unit_cost_of_solar * Size_of_the_SolarPanel[j] );
+
+dexpr float Cost_of_Transmission_Line = ( sum(i in reservoir, j in demand)  Unit_cost_of_transmission * Maximum_Energy_Transmission[i][j] );
+
+dexpr float Cost_of_Mismatched_Demand = ( sum(j in demand, t in time) Unit_cost_of_grid * Grid_Usage[j][t] );
+
+//dexpr int setup_cost = max(t in time)binary_var[t];
+
+minimize ((Cost_of_Reservoir + Cost_of_Hydropower_Generators) * (Discount_factor_for_hydropower)) + (Cost_of_Solar * Discount_factor_for_solarpower) + (Cost_of_Transmission_Line * Discount_factor_for_transmission) + (Cost_of_Mismatched_Demand);
+
+
+// Constraints
+
+subject to{
+
+
+	forall (i in reservoir , t in time )
+		Water_Size[i][t] <= Size_of_the_Reservoir[i];
+
+	
+	forall (i in reservoir , t in time )
+		Mass_balance:
+	   		Water_Size[i][t] ==  Water_Size[i][t-1] + Water_inflow[i][t] - Water_Released[i][t] - Water_Spilled[i][t];
+	
+	forall (i in reservoir)
+	  Water_Size[i][0] == (Size_of_the_Reservoir[i]) ;
+    
+    forall (i in reservoir )
+      Initiating_the_reservoir:
+        Water_Size[i][1] == Size_of_the_Reservoir[i] + Water_inflow[i][1] - Water_Released[i][1] - Water_Spilled[i][1] ;
+
+
+   forall (i in reservoir) 
+   		At_time_T_end_the_reservoir_will_be_full:    
+			Water_Size[i][365] == Size_of_the_Reservoir[i] ;
+
+	forall (i in reservoir , t in time )
+      f_Rxgxhxa_indicates_total_amount_of_energy_generated_at_time_t:
+		Water_Released[i][t] * Efficiency_of_hydros * Gravity * Height_of_reservoir[i] <= Size_of_the_Generator[i] * length_of_time_periods; 
+
+	forall (i in reservoir , t in time )
+  		Generated_electricity_is_limited_by_the_transmission_capacity:
+			sum(j in demand) Electricity_Sent[i][j][t] == Water_Released[i][t]*Efficiency_of_hydros*Gravity*Height_of_reservoir[i];
+	
+	forall (i in reservoir , j in demand, t in time )
+		Amount_of_energy_transmitted_at_time_t_cannot_exceed_the_transmission_capacity:
+		   Electricity_Sent[i][j][t] <= Maximum_Energy_Transmission[i][j] * length_of_time_periods;
+		   
+	forall (j in demand, t in time )
+	   Demand_constraint:
+		Demand[j][t] <= Grid_Usage[j][t] + (Solar_radiation[j][t]*Size_of_the_SolarPanel[j] * Efficiency_of_solar) + (sum(i in reservoir) (Electricity_Sent[i][j][t]) * (1 - Power_loss));
+	    
+	forall(i in reservoir, t in time)
+		Water_Size[i][t] >= 0;
+	
+	forall(i in reservoir)
+		Size_of_the_Reservoir[i] >= 0;
+	
+	forall(i in reservoir)
+		Size_of_the_Generator[i] >= 0;
+	
+	forall(i in reservoir, t in time)
+		Water_Released[i][t] >= 0;
+		
+	forall(j in demand, t in time)
+		Grid_Usage[j][t] >= 0 ;
+	
+	forall(i in reservoir, j in demand)
+		Maximum_Energy_Transmission[i][j] >= 0;
+	
+	forall(i in reservoir, j in demand, t in time)
+		Electricity_Sent[i][j][t] >= 0;
+	
+	forall(j in demand)
+		Size_of_the_SolarPanel[j] >= 0;
+	
+	forall(i in reservoir, t in time)
+		Water_Spilled[i][t] >= 0;	
+
+} 
