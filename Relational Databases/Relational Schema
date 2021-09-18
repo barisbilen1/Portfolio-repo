@@ -1,0 +1,148 @@
+
+#RELATIONAL SCHEMA FOR OUR TV-COMPETITIONS DATABASE
+
+
+User (
+email : text – required – no duplicates,
+name : text – required,
+surname : text – required,
+address : text – required,
+birth : date/time – required,
+PRIMARY KEY (email)
+)
+
+Competitors (
+competitors_email: number – required - no duplicates,
+PRIMARY KEY (competitors_email),
+FOREIGN KEY (competitors_email) REFERENCES User.email
+)
+
+Referees (
+referees_email : number – required – no duplicates,
+salary : number – required,
+phone_number : number – required,
+PRIMARY KEY (referees_ email),
+FOREIGN KEY (referees_ email) REFERENCES User.email
+)
+
+Editors (
+Editor_ email : number – required – no duplicates,
+PRIMARY KEY (editors_ email),
+FOREIGN KEY (editors_ email) REFERENCES User.email
+)
+
+Competition (
+competition_number : number – required – no duplicates,
+competition_name : text – required,
+starting_year : number – required,
+total_budget : number – required,
+type : text – required,
+PRIMARY KEY (competition_number)
+)
+
+edits (
+edit_id : number – required – no duplicates,
+PRIMARY KEY (edits_id)
+)
+
+
+Episodes (
+episode_number : number – required,
+season_number : number – required,
+competition_name : text – required,
+episode_name : text – required,
+cost : number – required,
+air_date : date/time – required,
+PRIMARY KEY (episode_number, season_number, competition_name)
+)
+
+Channels (
+name : text – required – no duplicates
+frequency : number - required
+PRIMARY KEY (name)
+)
+
+assign_Winner (
+prize : text – required,
+competitors_email: text – required – no duplicates,
+referees_email: text – required – no duplicates,
+competition_number: number – required – no duplicates,
+PRIMARY KEY (competitors_email, referees_email, competition_number)
+FOREIGN KEY (competitors_email ) REFERENCES
+Competitors.competitors_email
+FOREIGN KEY (referees_email ) REFERENCES Referees.referees_email
+FOREIGN KEY( competition_number ) REFERENCES
+Competition.competition_number
+)
+
+Appear (
+point: text - required,
+competition_number: number – required – no duplicates,
+competitors_email: text – required – no duplicates,
+PRIMARY KEY (competition_number, competitors_email)
+FOREIGN KEY( competition_number ) REFERENCES
+Competition.competition_number
+FOREIGN KEY (competitors_email ) REFERENCES
+Competitors.competitors_email
+)
+
+Has (
+episode_number: number - required,
+season_number : number - required,
+competition_name: text - required,
+competition_number: number – required,
+PRIMARY KEY(episode_number,season_number,competition_name)
+FOREIGN KEY ( episode_number ) REFERENCES
+Episodes.episode_number
+FOREIGN KEY ( season_number ) REFERENCES
+Episodes.season_number
+FOREIGN KEY ( competition_name ) REFERENCES
+Episodes.competition.name
+FOREIGN KEY ( competition_number ) REFERENCES
+Competition.competition_number
+)
+
+by (
+edit_id : number – required – no duplicates,
+editor_email : text – required,
+PRIMARY KEY (edit_id),
+FOREIGN KEY (edit_id) REFERENCES edits.edit_id,
+FOREIGN KEY (editor_email) REFERENCES Editors.editor_email
+)
+
+aired (
+edit_id : number – required,
+name : text – required,
+PRIMARY KEY (edit_id, name),
+FOREIGN KEY (edit_id) REFERENCES edits.edit_id,
+FOREIGN KEY (name) REFERENCES Channels.name
+)
+
+directs (
+competition_number : number - required - no duplicates
+email : text - required
+PRIMARY KEY(competition_number)
+FOREIGN KEY ( competition_number) REFERENCES
+Competition.competition_number
+FOREIGN KEY (email) REFERENCES User.competition_number
+)
+
+Supervises (
+referees.email: text - required,
+edit.id: number - required,
+episode_number: number - required,
+season_number: number - required,
+competition_name: text - required,
+PRIMARY KEY (referees_email, edit_id, episode_number,
+season_number, competition_name),
+FOREIGN KEY (episode_number, season_number,
+competition_name, edit_id) REFERENCES editing_process.episode_number,
+editing_process.season_number, editing_process.competation_name,
+editing_process.edit_id),
+FOREIGN KEY ( referees_email ) REFERENCES
+Referees.referees_email
+)
+
+
+
+
