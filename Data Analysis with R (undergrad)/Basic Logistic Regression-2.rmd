@@ -1,7 +1,5 @@
----
-  title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 6 </h2>  <h3> done by </h3> <h3> <span style="color:red">*Ali Barış Bilen* </span> </h3>  <h4> <span style="color:red">*21602902* </span> </h4></center>
-  pagetitle: IE 451 Homework 6 Fall 2020 
-  date: <center> Do not return. For self-study. We will post the solutions by 6 January 2021, Wednesday. </center>
+author: Ali Baris Bilen
+  date: <center> Nov 2020 </center>
   output: 
     bookdown::html_document2:
       theme: readable
