@@ -1,7 +1,4 @@
----
-title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Homework 5 </h2>  <h3> done by </h3> <h3> <span style="color:red">*ALİ BARIŞ BİLEN* </span> </h3>  <h4> <span
-  style="color:red">*21602902*
-pagetitle: IE 451 HW5 - Ali Barış Bilen
+author: Ali Barış Bilen
 date: "<center> due 19:00 on Saturday, 19 December 2020</center>"
 output:
   html_document:
@@ -183,6 +180,7 @@ table(glm.test.predsforcomb3,Direction.test)
 ```{r}
 mean(glm.test.predsforcomb3==Direction.test)
 ```
+
 Overall fraction of correct predictions have increased to 62.5%. It is the same as the model containing *Lag2* as the only predictor. That means *Lag4* does not have any predictive (or explanatory) power.
 
 **Conclusion** 
