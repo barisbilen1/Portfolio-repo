@@ -1,0 +1,551 @@
+---
+title: "Case Study - Ali Baris Bilen"
+author: "Ali Barış"
+date: "3/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r} 
+#importing libraries
+library(magrittr)
+library(tidyverse)
+library(knitr)
+library(pander)
+library(modelr)
+library(readr)
+library(data.table)
+```
+
+```{r}
+d <- read_csv("data.csv")
+```
+
+```{r}
+d <- d %>% mutate(Promotion = factor(Promotion),ProductCode = factor(ProductCode),StoreCode = factor(StoreCode))
+```
+
+```{r}
+d %>% summary() #checking the summary
+print(dim(d))
+```
+
+```{r}
+d <- data.frame(d)  
+d %>% head(1)
+glimpse(d)
+dim(d)             #just checking
+```
+
+```{r}
+d %>% summary()
+```
+```{r}
+#in d2, the negative sales values (returns) are converted to 0,
+#indicating that no item has been sold at that day.(just excluding
+#returns temporarily)
+d2 <- d
+d2$SalesQuantity[d2$SalesQuantity<0] <- 0
+```
+
+From the summary, I suspect that there might be outliers in SalesQuantity.
+
+```{r}
+outliers_sales = boxplot(d2$SalesQuantity)$out
+#outliers_sales
+```
+There is one observation on top, that is 912 (it is sales quantity).
+I am going to remove it because it might distort my model.
+
+```{r}
+which.max(d2$SalesQuantity)
+print(d2[713676,]) # it is 713676th instance that hosts this outlier
+```
+
+```{r}
+d3 <- d2[-c(713676),]
+d3 %>% summary()
+d2 <- d2[-c(713676),]   #I also would like to store this variable.
+```
+It is now better. I will continue with d3.
+
+```{r}
+d3 <- filter(d3, Promotion == "NoPromotion") #taking non-promotion rows as suggested in                                               #the assignment 
+```
+
+
+#Labeling Stores
+
+```{r}
+d4 <- d3 %>%  
+	group_by(StoreCode) %>%
+	summarise(avg_sales_per_store = mean(SalesQuantity))
+```
+
+
+```{r}
+d4 %>% head(3)
+```
+
+To decide for the thresholds that will separate *fast*, *medium*, *slow*, I check some plots for *sales per store* values.
+
+```{r}
+plot(d4)
+```
+
+```{r}
+hist(d4$avg_sales_per_store)    #we see normal distribution
+mean(d4$avg_sales_per_store)
+```
+
+```{r}
+quantile(d4$avg_sales_per_store, probs = seq(0, 1, 0.33), na.rm = FALSE,
+         names = TRUE, type = 7)
+```
+
+```{r}
+d4slow <- d4[(d4$avg_sales_per_store < 1.8714),]
+d4medium <- d4[(d4$avg_sales_per_store > 1.875  & d4$avg_sales_per_store < 2.2524),]
+d4fast <- d4[(d4$avg_sales_per_store > 2.2524),]
+```
+
+```{r}
+slowstore <- 'Slow'
+d4.1 <- cbind(d4slow,slowstore)
+names(d4.1)[3] <- "StoreType"
+
+mediumstore <- 'Medium'
+d4.2 <- cbind(d4medium,mediumstore)
+names(d4.2)[3] <- "StoreType"
+
+faststore <- 'Fast'
+d4.3 <- cbind(d4fast,faststore)
+names(d4.3)[3] <- "StoreType"
+```
+
+```{r}
+d5 <- rbind(d4.1,d4.2,d4.3)
+```
+
+```{r}
+d5 %>% head(2)
+```
+
+```{r}
+d5 <- d5[order(d5$StoreCode), ]
+row.names(d5) <- NULL #re-setting row index
+d5 %>% head(35)
+```
+
+So far so good. Now it is time to label products as well.
+
+```{r}
+d4_prod <- d3 %>%  
+	group_by(ProductCode) %>%
+	summarise(avg_sales_per_store_for_prod = mean(SalesQuantity))
+```
+
+```{r}
+plot(d4_prod)
+```
+
+```{r}
+hist(d4_prod$avg_sales_per_store_for_prod)   
+mean(d4_prod$avg_sales_per_store_for_prod)
+max(d4_prod$avg_sales_per_store_for_prod)
+```
+
+The distribution is highly right-skewed. This might cause some troubles during the analysis. Log transformation often successfully symmetrize such right tails.
+
+```{r}
+temp1 <- d4_prod %>% 
+  mutate_at(vars(-ProductCode), log)
+hist(temp1$avg_sales_per_store_for_prod)
+```
+Log transformation worked well. If it didn't, I'd go for Box-Cox or cube root transformation instead. Now the distribution has symmetrical form.
+
+```{r}
+quantile(d4_prod$avg_sales_per_store_for_prod, probs = seq(0, 1, 0.33), na.rm = FALSE,
+         names = TRUE, type = 7)
+```
+I now realized that I have some zero values and log transformation caused me to lose them. I will use cube root transformation.
+
+```{r}
+d4_prod$avg_sales_per_store_for_prod <- d4_prod$avg_sales_per_store_for_prod ^(1/3)
+hist(d4_prod$avg_sales_per_store_for_prod)
+```
+
+Cube root worked sufficiently well.
+
+```{r}
+d4_prod
+```
+
+```{r}
+quantile(d4_prod$avg_sales_per_store_for_prod, probs = seq(0, 1, 0.33), na.rm = FALSE,
+         names = TRUE, type = 7)
+```
+
+```{r}
+d4_prodslow <- d4_prod[(d4_prod$avg_sales_per_store_for_prod < 0.8532),]
+d4_prodmedium <- d4_prod[(d4_prod$avg_sales_per_store_for_prod  > 0.8532  & d4_prod$avg_sales_per_store_for_prod  < 1.1562),]
+d4_prodfast <- d4_prod[(d4_prod$avg_sales_per_store_for_prod  > 1.1562),]
+```
+
+```{r}
+slowstore_prod <- 'Slow'
+d4.1_prod <- cbind(d4_prodslow,slowstore_prod)
+names(d4.1_prod)[3] <- "ProductType"
+
+mediumstore_prod <- 'Medium'
+d4.2_prod <- cbind(d4_prodmedium,mediumstore_prod)
+names(d4.2_prod)[3] <- "ProductType"
+
+faststore_prod <- 'Fast'
+d4.3_prod <- cbind(d4_prodfast,faststore_prod)
+names(d4.3_prod)[3] <- "ProductType"
+```
+
+```{r}
+d5_prod <- rbind(d4.1_prod,d4.2_prod,d4.3_prod)
+```
+
+```{r}
+d5_prod <- d5_prod[order(d5_prod$ProductCode), ]
+row.names(d5_prod) <- NULL #re-setting row index
+d5_prod %>% head(2000)
+dim(d5_prod)
+```
+
+Quickly summarizing the main outputs so far:
+
+```{r}
+d5 %>% head(3)
+d5_prod %>% head(30)
+```
+Recall, our main data frame was,
+
+```{r}
+d2 %>% head(3) #d3 is the one with only NoPromotion sales, where d2 stores all data.
+```
+
+Now I know that which store is fast, medium or slow, and which product is fast, medium or slow. I need to combine these information in a single dataframe.
+
+```{r}
+d5_new <- d5 %>% mutate(StoreType = factor(StoreType))
+d5_new %>% summary()
+```
+
+We see that there are 94 fast stores, 115 medium stores, 130 slow stores. I am going to create an empty list in which I put all the *StoreCode*s that corresponds to fast,medium or slow stores respectively. 
+
+```{r}
+library(DescTools)
+
+nrow_d5_new <- nrow(d5_new)
+list_slowstores <- c()
+```
+
+```{r}
+for (i in 1:nrow_d5_new) { 
+    
+    if (d5_new[i,]$StoreType == "Slow") {
+      a <- d5_new[i,]$StoreCode
+      list_slowstores <- append(list_slowstores,a)}
+}
+```
+
+*list_slowstores* will store *StoreCode* values of slow stores. I am doing the same for medium and fast stores below.
+
+```{r}
+list_mediumstores <- c()    #for medium stores
+```
+
+```{r}
+for (i in 1:nrow_d5_new) { 
+    
+    if (d5_new[i,]$StoreType == "Medium") {
+      b <- d5_new[i,]$StoreCode
+      list_mediumstores <- append(list_mediumstores,b)}
+}
+```
+
+```{r}
+list_faststores <- c()     #for fast stores
+```
+
+```{r}
+for (i in 1:nrow_d5_new) { 
+    
+    if (d5_new[i,]$StoreType == "Fast") {
+      c <- d5_new[i,]$StoreCode
+      list_faststores <- append(list_faststores,c)}
+}
+```
+
+I will use the same procedure to find the *ProductCode*s for its respective categories.
+
+```{r}
+d5_prod_new<- d5_prod %>% mutate(ProductType = factor(ProductType))
+```
+
+```{r}
+nrow_d5_prod_new <- nrow(d5_prod_new)
+
+list_fastproducts <- c()     #for fast products
+```
+
+```{r}
+for (i in 1:nrow_d5_prod_new) { 
+    
+    if (d5_prod_new[i,]$ProductType == "Fast") {
+      d_fast <- d5_prod_new[i,]$ProductCode
+      list_fastproducts<- append(list_fastproducts,d_fast)}
+}
+```
+
+```{r}
+list_mediumproducts <- c()     #for medium products
+```
+
+```{r}
+for (i in 1:nrow_d5_prod_new) { 
+    
+    if (d5_prod_new[i,]$ProductType == "Medium") {
+      e <- d5_prod_new[i,]$ProductCode
+      list_mediumproducts<- append(list_mediumproducts,e)}
+}
+```
+
+```{r}
+list_slowproducts <- c()     #for slow products
+```
+
+```{r}
+for (i in 1:nrow_d5_prod_new) { 
+    
+    if (d5_prod_new[i,]$ProductType == "Slow") {
+      f <- d5_prod_new[i,]$ProductCode
+      list_slowproducts<- append(list_slowproducts,f)}
+}
+```
+
+We're done. Now it is time to combine all the information in one tibble such that each sales will have its own *ProductType*, *StoreType*, *SalesQuantity* and *Date*. And then I will group_by *SalesQuantity* by day (with summarise() I guess).
+
+```{r}
+d2 %>% head(2)     #recall that d2 was the data in which negative sales (returns) are                           #converted to 0.
+```
+
+```{r}
+d6 <- d2 %>% mutate(StoreCode = as.numeric(StoreCode))    #converting StoreCode into numeric.
+```
+
+Fast stores;
+
+```{r long}
+nrow_d6 <- nrow(d6)
+
+for (i in 1:nrow_d6 ) { 
+    
+  fs14 <- d6[i,2]
+  
+  if (fs14 %in% list_faststores ){
+      d6[i,2] <- 'Fast' } 
+}
+```
+
+```{r}
+d6 %>% head(10)
+```
+```{r}
+#write.csv(d6,"C:\\users\\asus\\Desktop\\d6withfaststores.csv", row.names = FALSE) 
+
+#I just wanted to backup because it took 2 hours to execute it.
+```
+
+Medium Stores; (it took 2 hours to execute the above code)
+
+```{r}
+for (i in 1:nrow_d6 ) { 
+    
+  ms14 <- d6[i,2]
+  
+  if (ms14 %in% list_mediumstores){
+      d6[i,2] <- 'Medium' } 
+}
+```
+
+```{r}
+d6 %>% head(10)               #the above code also took 1 hour, there are 1.8 million instances and code is not so efficient, sorry,
+                              #but it works.
+```
+
+```{r}
+#knitr::knit_exit() #just in case I need it (to abort knitting).
+```
+
+Slow stores;
+
+```{r}
+for (i in 1:nrow_d6 ) { 
+    
+  ss14 <- d6[i,2]
+  
+  if (ss14 %in% list_slowstores){
+      d6[i,2] <- 'Slow' } 
+}
+```
+
+```{r}
+d6 %>% head(100) 
+```
+Store types are ok. I want to backup this csv file because I don't want to repeat those for loops.
+
+```{r}
+write.csv(d6,"C:\\users\\asus\\Desktop\\d6_stores_encoded.csv", row.names = FALSE) #extracted the file to my desktop.
+```
+
+```{r}
+d6_stores_encoded <- read_csv("d6_stores_encoded.csv")
+d6_stores_encoded <- data.frame(d6_stores_encoded)
+```
+
+```{r}
+d6_stores_encoded %>% head() #good
+dim(d6_stores_encoded)       #good, no data lost because dimensions are the same as d6
+```
+
+Now I will enter *ProductTypes*.
+
+Fast products;
+
+```{r}
+d6_stores_encoded <- d6_stores_encoded %>% mutate(ProductCode = as.character(ProductCode))
+```
+
+```{r}
+nrow_d6_stores_encoded <- nrow(d6_stores_encoded)
+
+for (i in 1:nrow_d6_stores_encoded ) { 
+    
+  sp14 <- d6_stores_encoded[i,3]
+  
+  if (sp14 %in% list_slowproducts){
+      d6_stores_encoded[i,3] <- 'SlowProduct' } 
+}
+```
+
+```{r}
+d6_stores_encoded %>% tail(2000)
+```
+
+
+
+```{r}
+d6_stores_encoded %>% head(2000)
+```
+
+
+
+```{r}
+for (i in 1:nrow_d6_stores_encoded ) { 
+    
+  fp15 <- d6_stores_encoded[i,3]
+  
+  if (fp15 %in% list_fastproducts){
+      d6_stores_encoded[i,3] <- 'FastProduct' } 
+}
+```
+
+I want to backup the file again. Above for loop took 3 hours, this kind of search takes too much time.
+I don't want to lose the progress.
+
+```{r}
+#d6_stores_encoded %>% summary()
+write.csv(d6_stores_encoded,"C:\\users\\asus\\Desktop\\d6_stores_encoded_also_fastslow_products.csv", row.names = FALSE) #extracted the file to my desktop.
+```
+
+Now, all values in *ProductCode* column is either *FastProduct*, *SlowProduct* or a numeric code which belongs to the list of *list_mediumproducts*. To accelerate the progress, I found another way to encode *MediumProducts* which I believe it will be faster than the above two codes. The logic is, if a values length (all are strings including numeric codes) is less than five, then it is automatically a *MediumProduct* because all the codes take value between 1 and 317 (less than 5 characters), while the other two, i.e. *FastProduct*, *SlowProduct* have length of 11. In the below code I tested the approach and it works.
+
+```{r} 
+# d6_stores_encoded %>% head(3)
+# d6_for_experiments <- d6_stores_encoded
+# 
+# for (i in 1:nrow_d6_stores_encoded) { 
+#     
+#   xyc <- d6_for_experiments[i,3]
+#   
+#   if (nchar(xyc) <  5  ){
+#       d6_for_experiments[i,3] <- 'bebe' } 
+#   
+#   
+# }
+# 
+# d6_for_experiments[100000:102000,]
+```
+
+
+Let's apply it to our data.
+
+Medium products;
+
+```{r}
+for (i in 1:nrow_d6_stores_encoded) { 
+    
+  mp14 <- d6_stores_encoded[i,3]
+  
+  if (nchar(mp14) < 5 ){
+      d6_stores_encoded[i,3] <- 'MediumProduct' } 
+}
+```
+
+
+```{r}
+d7 <- d6_stores_encoded
+```
+
+```{r}
+d7 %>% head(3)    
+```
+
+Data preparation phase is over. The final data is d7. I extract it as a .cvs file and I will open another 
+Rmd file in which I will import d7 as the main data, to not repeat all the steps up to this point.
+
+```{r}
+write.csv(d7,"C:\\users\\asus\\Desktop\\d7.csv", row.names = FALSE)
+```
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+#d %>% format(as.Date("2014-03-16"), "%W")
+```
+
+
+
+
+
+
+
+
