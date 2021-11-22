@@ -1,12 +1,5 @@
----
-  title: <center> <h3> Fall 2020 </h3> <h2> IE 451 Applied Data Analysis </h2> <h3> taught by Savaş Dayanık </h3>  <h2> Midterm Examination </h2>  <h3> done by </h3> <h3> <span style="color:red">*Ali Barış Bilen* </span> </h3>  <h4> <span style="color:red">*21602902* </span> </h4></center>
-  pagetitle: IE 451 Midterm Fall 2020 
-  date: <center> between 8:30 and 12:30 on Wednesday, 11 November 2020</center>
-  output: 
-    bookdown::html_document2:
-      theme: readable
-      toc: true
----
+
+author: Ali Baris Bilen
   
 ```{r setup, include=FALSE}
 library(magrittr)
@@ -16,8 +9,6 @@ opts_chunk$set(echo = TRUE)
 ```
 
 -----
-
-<h3> <center> Questions </center> </h3>
 
 A bank's credit card office wants to understand the factors that affect the monthly average balance (namely, outstanding debt) on a credit card of their customers. For  a statistical analysis, the bank provided information in [CreditCard.csv](CreditCard.csv). Each row of the file belongs to a customer, and the columns provide the following information about the customer:
 
