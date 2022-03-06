@@ -2,7 +2,7 @@
 # Date: 13.02.2022
 
 # This little program will help you split your pdf's fast & safely.
-# You no more have to upload your pdf's to untrustable websites that potentially process your input outside Turkey.
+# You no more have to upload your pdf's to untrustable websites that potentially process your input data outside the country you're living in.
 
 # Usage: Please read usage.txt located in program_files folder.
 
@@ -77,6 +77,7 @@ if __name__ == "__main__":
 
     if os.path.exists("program_files/temp_file_folder_for_" + temp_file[:len(temp_file)-4] + "/"):
         os.rmdir("program_files/temp_file_folder_for_" + temp_file[:len(temp_file)-4] + "/")
+        # why not shutil()? - because shutil() operations are irreversible (it's too dangerous and I don't prefer using it here).
 
     main_output_temp = str(input("Please enter a name for merged pdf output (just press enter to keep the same file name): "))
     
