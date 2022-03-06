@@ -1,0 +1,32 @@
+# Fun Project
+
+This little program will help you split your pdf's fast & safely.
+You no more have to upload your pdf's to untrustable websites that potentially process your input data outside the country you're living in.
+
+# How to use PDF Splitter?
+
+## Setup:
+
+1) Install Python from the internet (link:"https://www.python.org/downloads/release/python-3102/" --> you can choose windows 64-bit)
+2) Place this "PdfSplitter" folder to your desktop (don't change its name)
+3) Go to program_files in PdfSplitter and right-click run.bat, and choose "Edit with Notepad++".
+    --> If you don't have Notepad++ installed on your system, "Edit with Notepad++" option will not appear.
+4) Update the paths in this little script. First one is the path (location) for python, second one is the path for the script to be run.
+    --> To retrieve the path of python, write "anaconda prompt" to search bar, open it, and write "print(sys.executable)" then press enter.
+    --> You will see the path of python.exe. Enter this path to the first path mentioned in step 4.  
+5) Make sure to save the above file with .bat extension (use "save as" option for this) (or create .txt file and make its extension .bat)
+6) Write "Anaconda Prompt" to search bar at the very left bottom, open it.
+7) Write "cd Desktop/PdfSplitter/program_files" and press enter.
+8) Write pip install -r requirements.txt.
+
+--> Installation is completed.
+
+## Usage:
+
+1) Press the 'PdfSplitter' icon and the program will guide you through the terminal.
+2) In case the shortcut doesn't work, open an Anaconda Prompt and go to the directory where pdf_v1.py resides,
+and manually run the program with the following command:"python pdf_v1.py".
+3) There should be a folder called "files_to_be_split" and you should put pdf files that will be split.
+4) You will see the outputs in a folder called "Output".
+
+A friendly warning: Always check the output. Program works pretty much stable but extra set of eyes would do no harm.
