@@ -95,3 +95,5 @@ if __name__ == "__main__":
         main_output.write(output_stream)
 
     print(colored("New PDF is successfully created. Please find it in the 'Output' folder.",'green'))
+    
+    
