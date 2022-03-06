@@ -1,5 +1,5 @@
 
-                        ##-- BASIC EXPLATORY DATA ANALYSIS --##
+                        ##-- BASIC EXPLORATORY DATA ANALYSIS --##
 # Importing libraries
 
 import pandas as pd
