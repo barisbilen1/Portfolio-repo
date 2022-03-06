@@ -19,5 +19,9 @@ How to use PDF Splitter?
 ## Usage:
 
 1) Press the 'PdfSplitter' icon and the program will guide you through the terminal.
+2) In case the shortcut doesn't work, open an Anaconda Prompt and go to the directory where pdf_v1.py resides,
+and manually run the program with the following command:"python pdf_v1.py".
+3) There should be a folder called "files_to_be_split" and you should put pdf files that will be split.
+4) You will see the outputs in a folder called "Output".
 
 A friendly warning: Always check the output. Program works pretty much stable but extra set of eyes would do no harm.
