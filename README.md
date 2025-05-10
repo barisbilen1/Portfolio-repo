@@ -1,6 +1,6 @@
 # Portfolio-repo
 
-Codes I wrote for Kaggle competitions, undergraduate studies, etc.
+Code & notebooks for Kaggle competitions, undergraduate studies, etc.
 
 My Medium profile can be found [here](https://alibarisbilen1.medium.com/).
 
