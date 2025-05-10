@@ -1,7 +1,7 @@
 # Portfolio-repo
 
-This repo hosts the codes I wrote for Kaggle competitions, undergraduate studies, etc.
+Codes I wrote for Kaggle competitions, undergraduate studies, etc.
 
-For other projects (mostly no coding involved), please see the following link: https://drive.google.com/drive/folders/1MffFfd9uwc4J2XrgjxzF9OyWximKZFdo?usp=sharing
+My Medium profile can be found [here](https://alibarisbilen1.medium.com/).
 
-baris.bilen - 18.09.2021
+baris.bilen - 10.05.2025
